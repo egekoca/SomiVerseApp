@@ -3,6 +3,7 @@ import { CONFIG } from '../config.js';
 /**
  * Zone Manager
  * Şehir planlama ve çarpışma bölgeleri yönetimi
+ * Ana bina alanları daha geniş rezerve edildi
  */
 export class ZoneManager {
   constructor() {
@@ -11,28 +12,31 @@ export class ZoneManager {
   }
 
   reserveMainZones() {
-    const { mapLimit, collisionPadding, sideRoadDistance, hubSize, buildingDistance } = CONFIG.city;
+    const { mapLimit, collisionPadding, sideRoadDistance, buildingDistance } = CONFIG.city;
 
     // -- YOLLAR (Grid Sistemi) --
     // Merkez Yollar
-    this.addZone(0, 0, collisionPadding, mapLimit * 2); // Dikey Merkez
-    this.addZone(0, 0, mapLimit * 2, collisionPadding); // Yatay Merkez
+    this.addZone(0, 0, collisionPadding, mapLimit * 2);
+    this.addZone(0, 0, mapLimit * 2, collisionPadding);
 
-    // Yan Yollar
-    // Dikey Yanlar
+    // Yan Yollar - Dikey
     this.addZone(sideRoadDistance, 0, collisionPadding, mapLimit * 2);
     this.addZone(-sideRoadDistance, 0, collisionPadding, mapLimit * 2);
 
-    // Yatay Yanlar
+    // Yan Yollar - Yatay
     this.addZone(0, sideRoadDistance, mapLimit * 2, collisionPadding);
     this.addZone(0, -sideRoadDistance, mapLimit * 2, collisionPadding);
 
     // -- ANA BİNA BÖLGELERİ --
+    // Daha geniş alan rezerve et - arka plan binaları girmesin
     const dist = buildingDistance;
-    this.addZone(dist, -dist, hubSize, hubSize);
-    this.addZone(-dist, -dist, hubSize, hubSize);
-    this.addZone(dist, dist, hubSize, hubSize);
-    this.addZone(-dist, dist, hubSize, hubSize);
+    const hubSize = 70; // Daha geniş alan (50 -> 70)
+    
+    // 4 ana bina alanı
+    this.addZone(dist, -dist, hubSize, hubSize);   // Sağ üst - SWAP
+    this.addZone(-dist, -dist, hubSize, hubSize);  // Sol üst - LEND
+    this.addZone(dist, dist, hubSize, hubSize);    // Sağ alt - MINT
+    this.addZone(-dist, dist, hubSize, hubSize);   // Sol alt - CLAIM
   }
 
   addZone(x, z, w, d) {
@@ -54,4 +58,3 @@ export class ZoneManager {
 }
 
 export default ZoneManager;
-

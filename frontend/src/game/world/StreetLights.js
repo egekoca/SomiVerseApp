@@ -3,7 +3,7 @@ import { CONFIG } from '../config.js';
 
 /**
  * Street Lights
- * Sokak lambaları sistemi
+ * Mor tonlu sokak lambaları
  */
 export class StreetLights {
   constructor(scene) {
@@ -12,6 +12,7 @@ export class StreetLights {
     this.instancedHeads = null;
     this.instancedBulbs = null;
     this.lightCount = 0;
+    this.positions = [];
     
     this.create();
   }
@@ -20,66 +21,62 @@ export class StreetLights {
     const roadPositions = [0, CONFIG.city.sideRoadDistance, -CONFIG.city.sideRoadDistance];
     const { spacing, offset, range } = CONFIG.streetLights;
     
-    const positions = [];
-    
     roadPositions.forEach(x => {
       for (let z = -range; z <= range; z += spacing) {
-        const isIntersection = roadPositions.some(rz => Math.abs(z - rz) < 15);
+        const isIntersection = roadPositions.some(rz => Math.abs(z - rz) < 20);
         if (!isIntersection) {
-          positions.push({ x: x + offset, z, rot: Math.PI });
-          positions.push({ x: x - offset, z, rot: 0 });
+          this.positions.push({ x: x + offset, z, rot: Math.PI, side: 1 });
+          this.positions.push({ x: x - offset, z, rot: 0, side: -1 });
         }
       }
     });
 
     roadPositions.forEach(z => {
       for (let x = -range; x <= range; x += spacing) {
-        const isIntersection = roadPositions.some(rx => Math.abs(x - rx) < 15);
+        const isIntersection = roadPositions.some(rx => Math.abs(x - rx) < 20);
         if (!isIntersection) {
-          positions.push({ x, z: z + offset, rot: -Math.PI / 2 });
-          positions.push({ x, z: z - offset, rot: Math.PI / 2 });
+          this.positions.push({ x, z: z + offset, rot: -Math.PI / 2, side: 1 });
+          this.positions.push({ x, z: z - offset, rot: Math.PI / 2, side: -1 });
         }
       }
     });
 
-    this.lightCount = positions.length;
-    this.createInstancedLights(positions);
-    this.addKeyLights();
+    this.lightCount = this.positions.length;
+    this.createInstancedLights();
+    this.addStreetLightGlow();
   }
 
-  createInstancedLights(positions) {
-    const count = positions.length;
+  createInstancedLights() {
+    const count = this.positions.length;
     
     const poleGeo = new THREE.CylinderGeometry(0.3, 0.3, 10, 6);
     const headGeo = new THREE.BoxGeometry(2, 0.5, 1);
     const bulbGeo = new THREE.BoxGeometry(1.5, 0.3, 0.8);
     
-    const poleMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
-    const headMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
-    const bulbMat = new THREE.MeshBasicMaterial({ color: CONFIG.colors.streetLight });
+    // Mor tonlu
+    const poleMat = new THREE.MeshLambertMaterial({ color: 0x3a2850 });
+    const headMat = new THREE.MeshLambertMaterial({ color: 0x4a3860 });
+    const bulbMat = new THREE.MeshBasicMaterial({ color: 0xeeddff });
     
     this.instancedPoles = new THREE.InstancedMesh(poleGeo, poleMat, count);
     this.instancedHeads = new THREE.InstancedMesh(headGeo, headMat, count);
     this.instancedBulbs = new THREE.InstancedMesh(bulbGeo, bulbMat, count);
     
-    this.instancedPoles.castShadow = false;
-    this.instancedPoles.receiveShadow = false;
-    
     const dummy = new THREE.Object3D();
     
-    positions.forEach((pos, i) => {
+    this.positions.forEach((pos, i) => {
       dummy.position.set(pos.x, 5, pos.z);
       dummy.rotation.set(0, pos.rot, 0);
       dummy.updateMatrix();
       this.instancedPoles.setMatrixAt(i, dummy.matrix);
       
-      const headOffsetX = Math.sin(pos.rot + Math.PI/2) * 1;
-      const headOffsetZ = Math.cos(pos.rot + Math.PI/2) * 1;
+      const headOffsetX = Math.sin(pos.rot + Math.PI/2) * 1.5;
+      const headOffsetZ = Math.cos(pos.rot + Math.PI/2) * 1.5;
       dummy.position.set(pos.x + headOffsetX, 10, pos.z + headOffsetZ);
       dummy.updateMatrix();
       this.instancedHeads.setMatrixAt(i, dummy.matrix);
       
-      dummy.position.set(pos.x + headOffsetX, 9.7, pos.z + headOffsetZ);
+      dummy.position.set(pos.x + headOffsetX, 9.6, pos.z + headOffsetZ);
       dummy.updateMatrix();
       this.instancedBulbs.setMatrixAt(i, dummy.matrix);
     });
@@ -93,19 +90,46 @@ export class StreetLights {
     this.scene.add(this.instancedBulbs);
   }
 
-  addKeyLights() {
-    const keyPositions = [
-      { x: 0, z: 0 },
-      { x: 100, z: 0 },
-      { x: -100, z: 0 },
-      { x: 0, z: 100 },
-      { x: 0, z: -100 }
-    ];
-    
-    keyPositions.forEach(pos => {
-      const light = new THREE.PointLight(CONFIG.colors.streetLight, 0.5, 50);
-      light.position.set(pos.x, 12, pos.z);
-      this.scene.add(light);
+  addStreetLightGlow() {
+    this.positions.forEach((pos, i) => {
+      if (i % 2 === 0) {
+        const headOffsetX = Math.sin(pos.rot + Math.PI/2) * 1.5;
+        const headOffsetZ = Math.cos(pos.rot + Math.PI/2) * 1.5;
+        
+        // Mor-beyaz ışık
+        const light = new THREE.PointLight(0xbb99dd, 0.6, 25, 2);
+        light.position.set(
+          pos.x + headOffsetX,
+          9,
+          pos.z + headOffsetZ
+        );
+        this.scene.add(light);
+        
+        const glowX = pos.x + headOffsetX * 3;
+        const glowZ = pos.z + headOffsetZ * 3;
+        
+        const glowGeo = new THREE.CircleGeometry(3, 16);
+        const glowMat = new THREE.MeshBasicMaterial({
+          color: 0x9977bb,
+          transparent: true,
+          opacity: 0.25
+        });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.rotation.x = -Math.PI / 2;
+        glow.position.set(glowX, 0.14, glowZ);
+        this.scene.add(glow);
+        
+        const innerGlowGeo = new THREE.CircleGeometry(1.5, 16);
+        const innerGlowMat = new THREE.MeshBasicMaterial({
+          color: 0xbb99dd,
+          transparent: true,
+          opacity: 0.3
+        });
+        const innerGlow = new THREE.Mesh(innerGlowGeo, innerGlowMat);
+        innerGlow.rotation.x = -Math.PI / 2;
+        innerGlow.position.set(glowX, 0.15, glowZ);
+        this.scene.add(innerGlow);
+      }
     });
   }
 

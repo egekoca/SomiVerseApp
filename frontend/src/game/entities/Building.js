@@ -2,8 +2,7 @@ import * as THREE from 'three';
 
 /**
  * Building Entity
- * Etkileşimli binalar ve arka plan binaları
- * OPTIMIZED: Material ve geometry basitleştirildi
+ * Etkileşimli binalar - HER ZAMAN GÖRÜNÜR (frustumCulled = false)
  */
 export class Building {
   constructor(options = {}) {
@@ -29,10 +28,23 @@ export class Building {
     }
     
     this.addBaseElements();
+    
+    // ANA BİNALAR HER ZAMAN GÖRÜNÜR - frustum culling kapalı
+    this.disableFrustumCulling();
+  }
+
+  disableFrustumCulling() {
+    // Tüm child mesh'ler için frustumCulled = false
+    this.mesh.traverse((child) => {
+      if (child.isMesh || child.isLine || child.isPoints) {
+        child.frustumCulled = false;
+      }
+    });
+    this.mesh.frustumCulled = false;
   }
 
   addBaseElements() {
-    // Zemin halkası - OPTIMIZE: Segment azaltıldı
+    // Zemin halkası
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(18, 20, 32),
       new THREE.MeshBasicMaterial({
@@ -44,6 +56,7 @@ export class Building {
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.5;
+    ring.frustumCulled = false;
     this.mesh.add(ring);
 
     // Point light
@@ -76,6 +89,7 @@ export class Building {
     );
     sign.position.y = 10;
     sign.position.z = 15;
+    sign.frustumCulled = false;
     this.mesh.add(sign);
   }
 
@@ -99,7 +113,7 @@ export class Building {
 }
 
 /**
- * Arka plan binası oluşturucu - artık kullanılmıyor, InstancedMesh'e taşındı
+ * Arka plan binası - frustum culling AÇIK (performans için)
  */
 export class BackgroundBuilding {
   constructor(x, z, width, depth, height) {
@@ -111,6 +125,7 @@ export class BackgroundBuilding {
     );
     this.mesh.position.set(x, height / 2, z);
     this.mesh.scale.set(width, height, depth);
+    // Arka plan binaları için frustumCulled = true (varsayılan)
   }
 
   getMesh() {

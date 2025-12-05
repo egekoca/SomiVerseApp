@@ -3,14 +3,13 @@ import { CONFIG } from '../config.js';
 
 /**
  * Background City
- * Arka plan binaları ve dolgu yapılar
+ * Koyu morumsu binalar - DAHA GÖRÜNÜR
  */
 export class BackgroundCity {
   constructor(scene, occupiedZones) {
     this.scene = scene;
     this.occupiedZones = occupiedZones;
     this.instancedBuildings = null;
-    this.neonStrips = null;
     
     this.create();
   }
@@ -38,7 +37,8 @@ export class BackgroundCity {
     }
 
     this.createInstancedBuildings(buildingData);
-    this.createNeonStrips(buildingData);
+    this.createRoofNeonLines(buildingData);
+    this.createSideNeonStrips(buildingData);
   }
 
   createInstancedBuildings(buildingData) {
@@ -46,6 +46,7 @@ export class BackgroundCity {
     
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     
+    // Koyu mor bina - DAHA AÇIK
     const material = new THREE.MeshLambertMaterial({
       color: CONFIG.colors.buildingBase
     });
@@ -55,41 +56,96 @@ export class BackgroundCity {
     this.instancedBuildings.receiveShadow = true;
     
     const dummy = new THREE.Object3D();
+    const color = new THREE.Color();
     
     buildingData.forEach((b, i) => {
       dummy.position.set(b.x, b.h / 2, b.z);
       dummy.scale.set(b.w, b.h, b.d);
       dummy.updateMatrix();
       this.instancedBuildings.setMatrixAt(i, dummy.matrix);
+      
+      // Mor tonları - DAHA GÖRÜNÜR
+      const hue = 0.75 + Math.random() * 0.08;  // Mor
+      const saturation = 0.4 + Math.random() * 0.2;
+      const lightness = 0.12 + Math.random() * 0.08; // Daha açık
+      color.setHSL(hue, saturation, lightness);
+      this.instancedBuildings.setColorAt(i, color);
     });
     
     this.instancedBuildings.instanceMatrix.needsUpdate = true;
+    this.instancedBuildings.instanceColor.needsUpdate = true;
     this.scene.add(this.instancedBuildings);
   }
 
-  createNeonStrips(buildingData) {
-    // %20'sine neon ekle
-    const stripData = buildingData.filter(() => Math.random() > 0.8);
+  createRoofNeonLines(buildingData) {
+    const lineMat = new THREE.MeshBasicMaterial({
+      color: 0x9955dd,
+      transparent: true,
+      opacity: 0.8
+    });
+    
+    buildingData.forEach(b => {
+      const thickness = 0.3;
+      const y = b.h + 0.1;
+      
+      // Ön kenar
+      const frontLine = new THREE.Mesh(
+        new THREE.BoxGeometry(b.w, thickness, thickness),
+        lineMat
+      );
+      frontLine.position.set(b.x, y, b.z + b.d / 2);
+      this.scene.add(frontLine);
+      
+      // Arka kenar
+      const backLine = new THREE.Mesh(
+        new THREE.BoxGeometry(b.w, thickness, thickness),
+        lineMat
+      );
+      backLine.position.set(b.x, y, b.z - b.d / 2);
+      this.scene.add(backLine);
+      
+      // Sol kenar
+      const leftLine = new THREE.Mesh(
+        new THREE.BoxGeometry(thickness, thickness, b.d),
+        lineMat
+      );
+      leftLine.position.set(b.x - b.w / 2, y, b.z);
+      this.scene.add(leftLine);
+      
+      // Sağ kenar
+      const rightLine = new THREE.Mesh(
+        new THREE.BoxGeometry(thickness, thickness, b.d),
+        lineMat
+      );
+      rightLine.position.set(b.x + b.w / 2, y, b.z);
+      this.scene.add(rightLine);
+    });
+  }
+
+  createSideNeonStrips(buildingData) {
+    const stripData = buildingData.filter(() => Math.random() > 0.7);
     
     if (stripData.length === 0) return;
     
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshBasicMaterial({ color: 0x330033 });
+    const colors = [0x7744cc, 0x5533aa, 0x8855dd, 0x6644bb];
     
-    this.neonStrips = new THREE.InstancedMesh(geometry, material, stripData.length);
-    
-    const dummy = new THREE.Object3D();
-    
-    stripData.forEach((b, i) => {
-      const stripH = Math.random() * (b.h - 5) + 2;
-      dummy.position.set(b.x, stripH, b.z);
-      dummy.scale.set(b.w + 0.2, 1, b.d + 0.2);
-      dummy.updateMatrix();
-      this.neonStrips.setMatrixAt(i, dummy.matrix);
+    stripData.forEach(b => {
+      const stripH = Math.random() * (b.h - 10) + 5;
+      const stripColor = colors[Math.floor(Math.random() * colors.length)];
+      
+      const material = new THREE.MeshBasicMaterial({ 
+        color: stripColor,
+        transparent: true,
+        opacity: 0.7
+      });
+      
+      const strip = new THREE.Mesh(
+        new THREE.BoxGeometry(b.w + 0.3, 0.5, b.d + 0.3),
+        material
+      );
+      strip.position.set(b.x, stripH, b.z);
+      this.scene.add(strip);
     });
-    
-    this.neonStrips.instanceMatrix.needsUpdate = true;
-    this.scene.add(this.neonStrips);
   }
 
   checkCollision(x, z, w, d) {
@@ -106,11 +162,6 @@ export class BackgroundCity {
       this.instancedBuildings.geometry.dispose();
       this.instancedBuildings.material.dispose();
       this.scene.remove(this.instancedBuildings);
-    }
-    if (this.neonStrips) {
-      this.neonStrips.geometry.dispose();
-      this.neonStrips.material.dispose();
-      this.scene.remove(this.neonStrips);
     }
   }
 }

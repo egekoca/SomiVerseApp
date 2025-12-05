@@ -1,18 +1,26 @@
 /**
  * Oyun Konfigürasyonu
- * Tüm sabit değerler ve renk ayarları burada tanımlanır
+ * Koyu morumsu renk paleti
  */
 
 export const CONFIG = {
   colors: {
-    bg: 0x050510,
+    // Koyu morumsu arka plan (simsiyah değil)
+    bg: 0x0d0a14,
+    
+    // Neon renkler
     neonPink: 0xff0055,
     neonBlue: 0x00ccff,
     neonPurple: 0xaa00ff,
     neonGreen: 0x00ffaa,
-    buildingBase: 0x111118,
-    buildingWindow: 0x222233,
-    streetLight: 0xffffee,
+    
+    // Bina ve şehir - MORUMSU TONLAR
+    buildingBase: 0x1a1428,      // Koyu mor bina
+    buildingLight: 0x251a35,     // Açık mor bina
+    ground: 0x0f0c18,            // Mor zemin
+    road: 0x1a1525,              // Mor yol
+    
+    streetLight: 0xeeddff,
     gold: 0xffaa00
   },
   
@@ -50,7 +58,7 @@ export const CONFIG = {
   },
   
   streetLights: {
-    spacing: 60,
+    spacing: 50,
     offset: 15,
     range: 150
   },
