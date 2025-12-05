@@ -3,8 +3,7 @@ import { CONFIG } from '../config.js';
 
 /**
  * Player Entity - Titan Mech
- * Oyuncunun kontrol ettiği robot karakter
- * OPTIMIZED: Segment sayıları azaltıldı, material basitleştirildi
+ * Enhanced visibility with neon accents and glow effects
  */
 export class Player {
   constructor() {
@@ -22,121 +21,296 @@ export class Player {
   }
 
   createModel() {
-    // OPTIMIZE: MeshLambertMaterial kullan
-    const darkMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
-    const jointMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
-    const neonMat = new THREE.MeshBasicMaterial({
-      color: CONFIG.colors.neonGreen
-    });
+    // Main body - lighter metallic gray (not black)
+    const bodyMat = new THREE.MeshLambertMaterial({ color: 0x3a3a45 });
+    const accentMat = new THREE.MeshLambertMaterial({ color: 0x4a4a55 });
+    
+    // Neon materials - bright cyan
+    const neonCyan = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+    const neonGreen = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
     const visorMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
 
-    // Gövde - OPTIMIZE: Segment azaltıldı
+    // === TORSO ===
     const torso = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.5, 0.3, 0.8, 6),
-      darkMat
+      new THREE.CylinderGeometry(0.5, 0.35, 0.9, 8),
+      bodyMat
     );
     torso.position.y = 1.3;
     this.mesh.add(torso);
 
-    // Göğüs
-    const chest = new THREE.Mesh(
-      new THREE.BoxGeometry(0.7, 0.5, 0.5),
-      darkMat
+    // Torso neon ring
+    const torsoRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.45, 0.05, 8, 16),
+      neonCyan
     );
-    chest.position.set(0, 1.4, 0.1);
+    torsoRing.rotation.x = Math.PI / 2;
+    torsoRing.position.y = 1.1;
+    this.mesh.add(torsoRing);
+
+    // === CHEST ===
+    const chest = new THREE.Mesh(
+      new THREE.BoxGeometry(0.75, 0.55, 0.55),
+      accentMat
+    );
+    chest.position.set(0, 1.45, 0.1);
     this.mesh.add(chest);
 
-    // Neon Çekirdek - OPTIMIZE: Segment azaltıldı
-    const core = new THREE.Mesh(
-      new THREE.CircleGeometry(0.15, 8),
-      neonMat
+    // Chest neon lines
+    const chestLine1 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.77, 0.08, 0.02),
+      neonCyan
     );
-    core.position.set(0, 1.4, 0.36);
-    this.mesh.add(core);
+    chestLine1.position.set(0, 1.55, 0.38);
+    this.mesh.add(chestLine1);
+    
+    const chestLine2 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.77, 0.08, 0.02),
+      neonCyan
+    );
+    chestLine2.position.set(0, 1.35, 0.38);
+    this.mesh.add(chestLine2);
 
-    // Kafa
-    const head = new THREE.Mesh(
-      new THREE.BoxGeometry(0.45, 0.55, 0.55),
-      darkMat
+    // Power core - bright glowing
+    const core = new THREE.Mesh(
+      new THREE.CircleGeometry(0.18, 16),
+      neonCyan
     );
-    head.position.y = 1.95;
+    core.position.set(0, 1.45, 0.39);
+    this.mesh.add(core);
+    
+    // Core glow ring
+    const coreRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.18, 0.25, 16),
+      new THREE.MeshBasicMaterial({ 
+        color: 0x00ffff, 
+        transparent: true, 
+        opacity: 0.5 
+      })
+    );
+    coreRing.position.set(0, 1.45, 0.38);
+    this.mesh.add(coreRing);
+
+    // === HEAD ===
+    const head = new THREE.Mesh(
+      new THREE.BoxGeometry(0.5, 0.6, 0.6),
+      bodyMat
+    );
+    head.position.y = 2.0;
     this.mesh.add(head);
 
-    // Vizör
+    // Helmet accent
+    const helmet = new THREE.Mesh(
+      new THREE.BoxGeometry(0.52, 0.15, 0.62),
+      accentMat
+    );
+    helmet.position.y = 2.2;
+    this.mesh.add(helmet);
+
+    // Visor - bright glowing
     const visor = new THREE.Mesh(
-      new THREE.BoxGeometry(0.47, 0.15, 0.35),
+      new THREE.BoxGeometry(0.52, 0.18, 0.2),
       visorMat
     );
-    visor.position.set(0, 1.95, 0.15);
+    visor.position.set(0, 2.0, 0.22);
     this.mesh.add(visor);
 
-    // Kollar
-    this.createArms(darkMat, jointMat);
-
-    // Bacaklar
-    this.createLegs(darkMat);
-
-    // Kılıç - OPTIMIZE: Segment azaltıldı
-    const swordHandle = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.06, 0.06, 1.2, 6),
-      neonMat
+    // Visor glow effect
+    const visorGlow = new THREE.Mesh(
+      new THREE.BoxGeometry(0.54, 0.2, 0.05),
+      new THREE.MeshBasicMaterial({ 
+        color: 0x00ffff, 
+        transparent: true, 
+        opacity: 0.4 
+      })
     );
-    swordHandle.position.set(0.3, 1.6, -0.4);
+    visorGlow.position.set(0, 2.0, 0.35);
+    this.mesh.add(visorGlow);
+
+    // Head side lights
+    const headLight1 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.3, 0.08),
+      neonCyan
+    );
+    headLight1.position.set(-0.28, 2.0, 0.1);
+    this.mesh.add(headLight1);
+    
+    const headLight2 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.3, 0.08),
+      neonCyan
+    );
+    headLight2.position.set(0.28, 2.0, 0.1);
+    this.mesh.add(headLight2);
+
+    // === ARMS ===
+    this.createArms(bodyMat, accentMat, neonCyan);
+
+    // === LEGS ===
+    this.createLegs(bodyMat, accentMat, neonCyan);
+
+    // === BACKPACK / JETPACK ===
+    const backpack = new THREE.Mesh(
+      new THREE.BoxGeometry(0.5, 0.6, 0.3),
+      accentMat
+    );
+    backpack.position.set(0, 1.4, -0.35);
+    this.mesh.add(backpack);
+
+    // Jetpack thrusters
+    const thruster1 = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.15, 0.3, 8),
+      new THREE.MeshBasicMaterial({ color: 0x00ff88 })
+    );
+    thruster1.position.set(-0.15, 1.1, -0.4);
+    this.mesh.add(thruster1);
+    
+    const thruster2 = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.15, 0.3, 8),
+      new THREE.MeshBasicMaterial({ color: 0x00ff88 })
+    );
+    thruster2.position.set(0.15, 1.1, -0.4);
+    this.mesh.add(thruster2);
+
+    // === SWORD ===
+    // Handle
+    const swordHandle = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.06, 0.4, 8),
+      accentMat
+    );
+    swordHandle.position.set(0.4, 1.6, -0.35);
     swordHandle.rotation.z = -0.5;
     this.mesh.add(swordHandle);
+    
+    // Blade - glowing
+    const swordBlade = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.9, 0.02),
+      neonGreen
+    );
+    swordBlade.position.set(0.55, 2.0, -0.35);
+    swordBlade.rotation.z = -0.5;
+    this.mesh.add(swordBlade);
 
-    // OPTIMIZE: Oyuncu gölge düşürmesin (çok pahalı)
-    this.mesh.traverse(child => {
-      if (child.isMesh) {
-        child.castShadow = false;
-        child.receiveShadow = false;
-      }
-    });
+    // === POINT LIGHT - makes character glow ===
+    const playerLight = new THREE.PointLight(0x00ffff, 0.8, 15);
+    playerLight.position.y = 1.5;
+    this.mesh.add(playerLight);
+
+    // Ground indicator ring
+    const groundRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.8, 1.0, 24),
+      new THREE.MeshBasicMaterial({ 
+        color: 0x00ffff, 
+        transparent: true, 
+        opacity: 0.3,
+        side: THREE.DoubleSide
+      })
+    );
+    groundRing.rotation.x = -Math.PI / 2;
+    groundRing.position.y = 0.05;
+    this.mesh.add(groundRing);
   }
 
-  createArms(darkMat, jointMat) {
-    const shoulderGeo = new THREE.BoxGeometry(0.35, 0.35, 0.35);
-    const armGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.7, 6);
+  createArms(bodyMat, accentMat, neonMat) {
+    const shoulderGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+    const armGeo = new THREE.CylinderGeometry(0.14, 0.12, 0.75, 8);
 
-    // Sol Kol
+    // Left Arm
     const leftArmGroup = new THREE.Group();
-    leftArmGroup.position.set(-0.5, 1.5, 0);
-    leftArmGroup.add(new THREE.Mesh(shoulderGeo, darkMat));
-    const lArm = new THREE.Mesh(armGeo, jointMat);
-    lArm.position.y = -0.35;
+    leftArmGroup.position.set(-0.55, 1.5, 0);
+    
+    const lShoulder = new THREE.Mesh(shoulderGeo, accentMat);
+    leftArmGroup.add(lShoulder);
+    
+    const lArm = new THREE.Mesh(armGeo, bodyMat);
+    lArm.position.y = -0.4;
     leftArmGroup.add(lArm);
+    
+    // Arm neon ring
+    const lArmRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.15, 0.03, 8, 16),
+      neonMat
+    );
+    lArmRing.rotation.x = Math.PI / 2;
+    lArmRing.position.y = -0.5;
+    leftArmGroup.add(lArmRing);
+    
     this.mesh.add(leftArmGroup);
     this.userData.leftArm = leftArmGroup;
 
-    // Sağ Kol
+    // Right Arm
     const rightArmGroup = new THREE.Group();
-    rightArmGroup.position.set(0.5, 1.5, 0);
-    rightArmGroup.add(new THREE.Mesh(shoulderGeo, darkMat));
-    const rArm = new THREE.Mesh(armGeo, jointMat);
-    rArm.position.y = -0.35;
+    rightArmGroup.position.set(0.55, 1.5, 0);
+    
+    const rShoulder = new THREE.Mesh(shoulderGeo, accentMat);
+    rightArmGroup.add(rShoulder);
+    
+    const rArm = new THREE.Mesh(armGeo, bodyMat);
+    rArm.position.y = -0.4;
     rightArmGroup.add(rArm);
+    
+    const rArmRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.15, 0.03, 8, 16),
+      neonMat
+    );
+    rArmRing.rotation.x = Math.PI / 2;
+    rArmRing.position.y = -0.5;
+    rightArmGroup.add(rArmRing);
+    
     this.mesh.add(rightArmGroup);
     this.userData.rightArm = rightArmGroup;
   }
 
-  createLegs(darkMat) {
-    const legGeo = new THREE.BoxGeometry(0.3, 0.8, 0.35);
+  createLegs(bodyMat, accentMat, neonMat) {
+    const legGeo = new THREE.BoxGeometry(0.32, 0.85, 0.38);
 
-    // Sol Bacak
+    // Left Leg
     const leftLegGroup = new THREE.Group();
     leftLegGroup.position.set(-0.25, 0.8, 0);
-    const lLeg = new THREE.Mesh(legGeo, darkMat);
+    
+    const lLeg = new THREE.Mesh(legGeo, bodyMat);
     lLeg.position.y = -0.4;
     leftLegGroup.add(lLeg);
+    
+    // Leg neon stripe
+    const lLegStripe = new THREE.Mesh(
+      new THREE.BoxGeometry(0.05, 0.85, 0.4),
+      neonMat
+    );
+    lLegStripe.position.set(-0.14, -0.4, 0);
+    leftLegGroup.add(lLegStripe);
+    
+    // Knee light
+    const lKnee = new THREE.Mesh(
+      new THREE.BoxGeometry(0.2, 0.1, 0.1),
+      neonMat
+    );
+    lKnee.position.set(0, -0.4, 0.2);
+    leftLegGroup.add(lKnee);
+    
     this.mesh.add(leftLegGroup);
     this.userData.leftLeg = leftLegGroup;
 
-    // Sağ Bacak
+    // Right Leg
     const rightLegGroup = new THREE.Group();
     rightLegGroup.position.set(0.25, 0.8, 0);
-    const rLeg = new THREE.Mesh(legGeo, darkMat);
+    
+    const rLeg = new THREE.Mesh(legGeo, bodyMat);
     rLeg.position.y = -0.4;
     rightLegGroup.add(rLeg);
+    
+    const rLegStripe = new THREE.Mesh(
+      new THREE.BoxGeometry(0.05, 0.85, 0.4),
+      neonMat
+    );
+    rLegStripe.position.set(0.14, -0.4, 0);
+    rightLegGroup.add(rLegStripe);
+    
+    const rKnee = new THREE.Mesh(
+      new THREE.BoxGeometry(0.2, 0.1, 0.1),
+      neonMat
+    );
+    rKnee.position.set(0, -0.4, 0.2);
+    rightLegGroup.add(rKnee);
+    
     this.mesh.add(rightLegGroup);
     this.userData.rightLeg = rightLegGroup;
   }
@@ -163,7 +337,6 @@ export class Player {
       this.userData.leftLeg.rotation.x = -Math.sin(wt) * 0.6;
       this.userData.rightLeg.rotation.x = Math.sin(wt) * 0.6;
     } else {
-      // Yavaşça durma pozisyonuna dön
       this.userData.leftArm.rotation.x *= 0.8;
       this.userData.rightArm.rotation.x *= 0.8;
       this.userData.leftLeg.rotation.x *= 0.8;
