@@ -1,6 +1,6 @@
 /**
  * Loader Component
- * Oyun yüklenirken gösterilen ekran
+ * Loading screen shown while game initializes
  */
 export class Loader {
   constructor() {
@@ -12,7 +12,7 @@ export class Loader {
     this.element = document.createElement('div');
     this.element.id = 'loader';
     this.element.innerHTML = `
-      SİSTEM BAĞLANIYOR...
+      CONNECTING TO SYSTEM...
       <div class="loader-bar"></div>
     `;
     document.body.appendChild(this.element);
@@ -43,4 +43,3 @@ export class Loader {
 }
 
 export default Loader;
-

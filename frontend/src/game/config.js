@@ -1,24 +1,24 @@
 /**
- * Oyun Konfigürasyonu
- * Koyu morumsu renk paleti
+ * Game Configuration
+ * Dark purple color palette
  */
 
 export const CONFIG = {
   colors: {
-    // Koyu morumsu arka plan (simsiyah değil)
+    // Dark purple background (not pure black)
     bg: 0x0d0a14,
     
-    // Neon renkler
+    // Neon colors
     neonPink: 0xff0055,
     neonBlue: 0x00ccff,
     neonPurple: 0xaa00ff,
     neonGreen: 0x00ffaa,
     
-    // Bina ve şehir - MORUMSU TONLAR
-    buildingBase: 0x1a1428,      // Koyu mor bina
-    buildingLight: 0x251a35,     // Açık mor bina
-    ground: 0x0f0c18,            // Mor zemin
-    road: 0x1a1525,              // Mor yol
+    // Building and city - PURPLE TONES
+    buildingBase: 0x1a1428,      // Dark purple building
+    buildingLight: 0x251a35,     // Light purple building
+    ground: 0x0f0c18,            // Purple ground
+    road: 0x1a1525,              // Purple road
     
     streetLight: 0xeeddff,
     gold: 0xffaa00

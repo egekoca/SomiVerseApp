@@ -40,8 +40,8 @@ import {
 import { CONFIG } from './config.js';
 
 /**
- * Ana Oyun Sınıfı
- * Tüm oyun sistemlerini koordine eder
+ * Main Game Class
+ * Coordinates all game systems
  */
 export class Game {
   constructor(options = {}) {
@@ -66,24 +66,24 @@ export class Game {
   }
 
   async init() {
-    // Core sistemleri başlat
+    // Initialize core systems
     this.sceneManager = new SceneManager();
     this.cameraManager = new CameraManager();
     this.rendererManager = new RendererManager();
 
-    // Zone yöneticisi
+    // Zone manager
     this.zoneManager = new ZoneManager();
 
-    // Dünyayı oluştur
+    // Create world
     this.createWorld();
 
-    // Oyuncuyu oluştur
+    // Create player
     this.createPlayer();
 
-    // Input sistemini başlat
+    // Initialize input system
     this.inputSystem = new InputSystem();
 
-    // Etkileşim sistemini başlat
+    // Initialize interaction system
     this.interactionSystem = new InteractionSystem(
       this.cameraManager,
       this.actionButton,
@@ -98,7 +98,7 @@ export class Game {
       }
     };
 
-    // Modal kapanınca input'u tekrar aç
+    // Re-enable input when modal closes
     this.modal.setOnClose(() => {
       this.inputSystem.enable();
     });
@@ -106,7 +106,7 @@ export class Game {
     // Resize handler
     window.addEventListener('resize', () => this.onResize());
 
-    // Loader'ı gizle
+    // Hide loader
     if (this.loader) {
       this.loader.hide();
     }
@@ -117,19 +117,19 @@ export class Game {
   createWorld() {
     const scene = this.sceneManager.getScene();
 
-    // Şehir zemini
+    // City base
     new CityBase(scene);
 
-    // Sokak lambaları
+    // Street lights
     new StreetLights(scene);
 
-    // Otoyollar
+    // Highways
     this.highways = new Highways(scene);
 
-    // Arka plan binaları
+    // Background buildings
     new BackgroundCity(scene, this.zoneManager.getOccupiedZones());
 
-    // Etkileşimli binalar
+    // Interactive buildings
     this.createInteractiveBuildings();
   }
 
@@ -143,7 +143,7 @@ export class Game {
       z: -dist,
       color: CONFIG.colors.neonBlue,
       title: 'SWAP CITY',
-      subtitle: 'MERKEZİ BORSA',
+      subtitle: 'CENTRAL EXCHANGE',
       type: 'SWAP',
       builderFn: buildSwapCity,
       contentGenerator: generateSwapContent
@@ -157,7 +157,7 @@ export class Game {
       z: -dist,
       color: CONFIG.colors.neonPink,
       title: 'LENDING TOWER',
-      subtitle: 'LİKİDİTE HAVUZU',
+      subtitle: 'LIQUIDITY POOL',
       type: 'LEND',
       builderFn: buildLendingTower,
       contentGenerator: generateLendingContent
@@ -171,7 +171,7 @@ export class Game {
       z: dist,
       color: CONFIG.colors.neonGreen,
       title: 'MINT LAB',
-      subtitle: 'NFT OLUŞTURUCU',
+      subtitle: 'NFT CREATOR',
       type: 'MINT',
       builderFn: buildMintLab,
       contentGenerator: generateMintContent
@@ -185,7 +185,7 @@ export class Game {
       z: dist,
       color: CONFIG.colors.gold,
       title: 'GOLD FAUCET',
-      subtitle: 'GÜNLÜK ÖDÜLLER',
+      subtitle: 'DAILY REWARDS',
       type: 'CLAIM',
       builderFn: buildGoldFaucet,
       contentGenerator: generateFaucetContent
@@ -216,18 +216,18 @@ export class Game {
     
     this.animationId = requestAnimationFrame(() => this.animate());
 
-    // Oyuncu hareketini güncelle
+    // Update player movement
     this.updatePlayer();
 
-    // Otoyol arabalarını güncelle
+    // Update highway cars
     if (this.highways) {
       this.highways.update();
     }
 
-    // Bina animasyonlarını güncelle
+    // Update building animations
     this.buildings.forEach(building => building.update());
 
-    // Etkileşim kontrolü
+    // Check interactions
     this.interactionSystem.update(this.player.getPosition());
 
     // Render
@@ -265,4 +265,3 @@ export class Game {
 }
 
 export default Game;
-

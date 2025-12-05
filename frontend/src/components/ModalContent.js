@@ -1,41 +1,41 @@
 /**
  * Modal Content Generators
- * Her bina tipi için modal içeriği üreten fonksiyonlar
+ * Content generator functions for each building type
  */
 
 export function generateSwapContent() {
   return `
     <div class="defi-row">
-      <span class="defi-label">GÖNDERİLEN</span>
+      <span class="defi-label">SENDING</span>
       <span class="defi-value">1.5 ETH</span>
     </div>
     <div class="defi-row">
-      <span class="defi-label">ALINAN (TAHMİNİ)</span>
+      <span class="defi-label">RECEIVING (ESTIMATED)</span>
       <span class="defi-value">4500 USDC</span>
     </div>
     <div class="defi-row">
-      <span class="defi-label">KOMİSYON</span>
+      <span class="defi-label">FEE</span>
       <span class="defi-value">0.3%</span>
     </div>
-    <button class="primary-btn">SWAP BAŞLAT</button>
+    <button class="primary-btn">START SWAP</button>
   `;
 }
 
 export function generateLendingContent() {
   return `
     <div class="defi-row">
-      <span class="defi-label">TOPLAM YATIRIM</span>
+      <span class="defi-label">TOTAL DEPOSITS</span>
       <span class="defi-value">$12,450,000</span>
     </div>
     <div class="defi-row">
-      <span class="defi-label">APY (FAİZ)</span>
+      <span class="defi-label">APY (INTEREST)</span>
       <span class="defi-value text-green">+4.5%</span>
     </div>
     <div class="defi-row">
-      <span class="defi-label">BORÇ LİMİTİ</span>
+      <span class="defi-label">BORROW LIMIT</span>
       <span class="defi-value">80%</span>
     </div>
-    <button class="primary-btn">FON EKLE</button>
+    <button class="primary-btn">ADD FUNDS</button>
   `;
 }
 
@@ -46,14 +46,14 @@ export function generateMintContent() {
       <div class="nft-preview-label">PREVIEW</div>
     </div>
     <div class="defi-row">
-      <span class="defi-label">KOLEKSİYON</span>
+      <span class="defi-label">COLLECTION</span>
       <span class="defi-value">CYBER PUNKS</span>
     </div>
     <div class="defi-row">
-      <span class="defi-label">FİYAT</span>
+      <span class="defi-label">PRICE</span>
       <span class="defi-value">0.05 ETH</span>
     </div>
-    <button class="primary-btn">NFT ÜRET</button>
+    <button class="primary-btn">MINT NFT</button>
   `;
 }
 
@@ -62,10 +62,10 @@ export function generateFaucetContent() {
     <div class="countdown">23:59:00</div>
     <p class="countdown-label">/// NEXT CYCLE COOLDOWN</p>
     <div class="defi-row">
-      <span class="defi-label">GÜNLÜK ÖDÜL</span>
+      <span class="defi-label">DAILY REWARD</span>
       <span class="defi-value">100 TKN</span>
     </div>
-    <button class="primary-btn">TALEP ET</button>
+    <button class="primary-btn">CLAIM</button>
   `;
 }
 
@@ -75,4 +75,3 @@ export default {
   generateMintContent,
   generateFaucetContent
 };
-

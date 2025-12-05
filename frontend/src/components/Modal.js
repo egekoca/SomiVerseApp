@@ -1,6 +1,6 @@
 /**
  * Modal Component
- * HUD stili modal pencere sistemi
+ * HUD-style modal window system
  */
 export class Modal {
   constructor() {
@@ -25,7 +25,7 @@ export class Modal {
     this.modal.innerHTML = `
       <div class="modal-header">
         <div>
-          <h2 class="modal-title" id="m-title">BAŞLIK</h2>
+          <h2 class="modal-title" id="m-title">TITLE</h2>
           <div class="modal-subtitle">SECURE CONNECTION ESTABLISHED</div>
         </div>
         <div class="system-status">
@@ -45,7 +45,7 @@ export class Modal {
     this.overlay.appendChild(this.modal);
     document.body.appendChild(this.overlay);
 
-    // Element referansları
+    // Element references
     this.titleEl = this.modal.querySelector('#m-title');
     this.bodyEl = this.modal.querySelector('#m-body');
 
@@ -55,7 +55,7 @@ export class Modal {
       if (e.target === this.overlay) this.close();
     });
 
-    // Escape tuşu ile kapatma
+    // Close with Escape key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && this.isOpen) this.close();
     });
@@ -100,4 +100,3 @@ export class Modal {
 }
 
 export default Modal;
-

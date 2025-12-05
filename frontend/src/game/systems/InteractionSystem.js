@@ -3,7 +3,7 @@ import { CONFIG } from '../config.js';
 
 /**
  * Interaction System
- * Oyuncu ve binalar arası etkileşim yönetimi
+ * Player and building interaction management
  */
 export class InteractionSystem {
   constructor(camera, actionButton, modal) {
@@ -25,7 +25,7 @@ export class InteractionSystem {
     let nearest = null;
     let minDist = Infinity;
 
-    // En yakın binayı bul
+    // Find nearest building
     this.buildings.forEach(building => {
       const d = building.getDistanceTo(playerPosition);
       if (d < minDist) {
@@ -34,7 +34,7 @@ export class InteractionSystem {
       }
     });
 
-    // Etkileşim mesafesinde mi?
+    // Check if within interaction range
     if (nearest && minDist < CONFIG.buildings.interactionRange) {
       this.activeBuilding = nearest;
       this.showInteractionUI(nearest);
@@ -45,27 +45,27 @@ export class InteractionSystem {
   }
 
   showInteractionUI(building) {
-    // Rengi ayarla
+    // Set color
     const colorHex = '#' + building.color.toString(16).padStart(6, '0');
     this.actionButton.setColor(colorHex);
 
-    // Buton pozisyonunu hesapla
+    // Calculate button position
     const btnPos = new THREE.Vector3(building.x, 30, building.z);
     btnPos.project(this.camera.getCamera());
 
     const x = (btnPos.x * 0.5 + 0.5) * window.innerWidth;
     const y = -(btnPos.y * 0.5 - 0.5) * window.innerHeight;
 
-    // Butonı göster ve pozisyonla
+    // Show and position button
     this.actionButton.show();
     this.actionButton.updatePosition(x, y);
-    this.actionButton.setText('BAĞLAN: ' + building.title);
+    this.actionButton.setText('CONNECT: ' + building.title);
   }
 
   interact() {
     if (!this.activeBuilding) return false;
 
-    // Modal'ı aç
+    // Open modal
     this.modal.open(
       this.activeBuilding.title,
       this.activeBuilding.contentGenerator(),
@@ -91,4 +91,3 @@ export class InteractionSystem {
 }
 
 export default InteractionSystem;
-

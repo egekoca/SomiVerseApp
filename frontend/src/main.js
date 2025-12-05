@@ -1,6 +1,6 @@
 /**
  * SomiVerse - Cyberpunk Metropolis
- * Ana giriş noktası
+ * Main entry point
  */
 
 import './styles/main.css';
@@ -11,12 +11,12 @@ import { Modal } from './components/Modal.js';
 import { ActionButton } from './components/ActionButton.js';
 
 async function main() {
-  // UI componentlarını oluştur
+  // Create UI components
   const loader = new Loader();
   const modal = new Modal();
   const actionButton = new ActionButton();
 
-  // Oyunu başlat
+  // Initialize game
   const game = new Game({
     loader,
     modal,
@@ -26,10 +26,9 @@ async function main() {
   await game.init();
   game.start();
 
-  // Global erişim için (debug)
+  // Global access for debugging
   window.game = game;
 }
 
-// Sayfa yüklenince başlat
+// Start when page loads
 document.addEventListener('DOMContentLoaded', main);
-

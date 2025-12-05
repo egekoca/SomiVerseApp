@@ -1,6 +1,6 @@
 /**
  * ActionButton Component
- * 3D dünya üzerinde görünen etkileşim butonu
+ * Interaction button displayed on 3D world
  */
 export class ActionButton {
   constructor(onClick) {
@@ -12,7 +12,7 @@ export class ActionButton {
   create() {
     this.element = document.createElement('button');
     this.element.id = 'action-button';
-    this.element.textContent = 'BAĞLANTI KUR';
+    this.element.textContent = 'CONNECT';
     this.element.addEventListener('click', () => {
       if (this.onClick) this.onClick();
     });
@@ -49,4 +49,3 @@ export class ActionButton {
 }
 
 export default ActionButton;
-
