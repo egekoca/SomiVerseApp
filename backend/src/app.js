@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { gameRoutes } from './routes/game.js';
 import { defiRoutes } from './routes/defi.js';
+import { profileRoutes } from './routes/profile.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -13,13 +14,14 @@ app.use(express.json());
 // Routes
 app.use('/api/game', gameRoutes);
 app.use('/api/defi', defiRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
     timestamp: new Date().toISOString(),
-    version: '2.0.4'
+    version: '2.1.0'
   });
 });
 
