@@ -1,0 +1,384 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+/* === ROOT VE GENEL STİLLER === */
+:root {
+  --theme-color: #00ffcc;
+  --bg-dark: #010103;
+  --bg-modal: rgba(18, 16, 16, 0.9);
+  --text-primary: #fff;
+  --text-secondary: #888;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: var(--bg-dark);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* === LOADER === */
+#loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  color: #00ffcc;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+  z-index: 999;
+  letter-spacing: 5px;
+  transition: opacity 0.5s ease;
+}
+
+#loader.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loader-bar {
+  width: 200px;
+  height: 2px;
+  background: #333;
+  margin-top: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.loader-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 50%;
+  background: #00ffcc;
+  animation: load 1s infinite linear;
+}
+
+@keyframes load {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+/* === ACTION BUTTON (3D DÜNYA ÜZERİNDEKİ BUTON) === */
+#action-button {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 12px 30px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--theme-color);
+  color: var(--theme-color);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  display: none;
+  transition: all 0.2s;
+  pointer-events: auto;
+}
+
+#action-button:hover {
+  background: var(--theme-color);
+  color: #000;
+  box-shadow: 0 0 20px var(--theme-color);
+}
+
+#action-button::after {
+  content: '';
+  position: absolute;
+  bottom: -50px;
+  left: 50%;
+  width: 2px;
+  height: 50px;
+  background: linear-gradient(to bottom, var(--theme-color), transparent);
+}
+
+/* === MODAL OVERLAY === */
+#modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 900;
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+#modal-overlay.active {
+  display: flex;
+}
+
+/* === GAME MODAL (HUD SİSTEMİ) === */
+#game-modal {
+  width: 550px;
+  max-width: 90%;
+  background: 
+    linear-gradient(var(--bg-modal), rgba(0, 0, 0, 0.95)),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, #000 3px);
+  background-size: 100% 100%, 100% 4px;
+  border: 1px solid var(--theme-color);
+  border-left: 5px solid var(--theme-color);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.5);
+  color: var(--text-primary);
+  padding: 0;
+  position: relative;
+  transform: scale(0.95) perspective(1000px) rotateX(5deg);
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  clip-path: polygon(0 0, calc(100% - 30px) 0, 100% 30px, 100% 100%, 30px 100%, 0 calc(100% - 30px));
+}
+
+#modal-overlay.active #game-modal {
+  transform: scale(1) perspective(1000px) rotateX(0deg);
+  opacity: 1;
+}
+
+/* Scanlines Effect */
+#game-modal::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: 
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 2;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+}
+
+/* === MODAL HEADER === */
+.modal-header {
+  padding: 20px 30px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+  border-bottom: 1px solid var(--theme-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  font-size: 28px;
+  color: var(--theme-color);
+  text-shadow: 0 0 10px var(--theme-color);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin: 0;
+}
+
+.modal-subtitle {
+  font-size: 10px;
+  opacity: 0.7;
+  letter-spacing: 1px;
+}
+
+.system-status {
+  font-size: 10px;
+  color: #666;
+  text-align: right;
+  line-height: 1.2;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--theme-color);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 30px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: 0.2s;
+}
+
+.close-btn:hover {
+  opacity: 1;
+  text-shadow: 0 0 10px var(--theme-color);
+}
+
+/* === MODAL BODY === */
+.modal-body {
+  padding: 30px;
+  position: relative;
+  z-index: 5;
+}
+
+/* === MODAL FOOTER === */
+.modal-footer {
+  padding: 10px 30px;
+  display: flex;
+  justify-content: space-between;
+  opacity: 0.5;
+  font-size: 10px;
+}
+
+/* === DEFI ROW (İÇERİK SATIRLARI) === */
+.defi-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+
+.defi-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: var(--theme-color);
+}
+
+.defi-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.defi-value {
+  color: var(--text-primary);
+  font-size: 18px;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+.defi-value.text-green {
+  color: #0f0;
+}
+
+/* === PRIMARY BUTTON === */
+.primary-btn {
+  width: 100%;
+  padding: 18px;
+  background: var(--theme-color);
+  color: #000;
+  border: none;
+  font-family: 'Share Tech Mono', monospace;
+  font-weight: bold;
+  font-size: 18px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 20px;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.primary-btn:hover {
+  background: #fff;
+  box-shadow: 0 0 30px var(--theme-color);
+}
+
+/* === NFT PREVIEW === */
+.nft-preview {
+  text-align: center;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.nft-preview-box {
+  width: 120px;
+  height: 120px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--theme-color);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--theme-color);
+  font-size: 40px;
+}
+
+.nft-preview-label {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* === COUNTDOWN === */
+.countdown {
+  text-align: center;
+  font-size: 40px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: var(--theme-color);
+  text-shadow: 0 0 10px;
+}
+
+.countdown-label {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-bottom: 20px;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  #game-modal {
+    width: 95%;
+    margin: 10px;
+  }
+
+  .modal-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .modal-title {
+    font-size: 20px;
+  }
+
+  #action-button {
+    font-size: 12px;
+    padding: 10px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-body {
+    padding: 15px;
+  }
+
+  .defi-row {
+    flex-direction: column;
+    gap: 5px;
+    text-align: center;
+  }
+
+  .defi-value {
+    font-size: 16px;
+  }
+}
+

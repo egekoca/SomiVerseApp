@@ -1,0 +1,27 @@
+{
+  "name": "somiverse",
+  "version": "2.0.4",
+  "description": "Cyberpunk Metropolis - Three.js Tabanlı 3D Oyun",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "npm run dev:frontend & npm run dev:backend",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install"
+  },
+  "keywords": [
+    "three.js",
+    "game",
+    "cyberpunk",
+    "defi"
+  ],
+  "author": "SomiVerse Team",
+  "license": "MIT"
+}
+
