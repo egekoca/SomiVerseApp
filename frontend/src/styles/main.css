@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
 
 /* === ROOT VE GENEL STİLLER === */
 :root {
@@ -7,6 +7,8 @@
   --bg-modal: rgba(18, 16, 16, 0.9);
   --text-primary: #fff;
   --text-secondary: #888;
+  --neon-purple: #aa00ff;
+  --neon-pink: #ff0066;
 }
 
 * {
@@ -22,37 +24,155 @@ body {
   font-family: 'Share Tech Mono', monospace;
 }
 
-/* === LOADER === */
+/* === LOADER - INTRO SCREEN === */
 #loader {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: #000;
-  color: #00ffcc;
+  z-index: 9999;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-size: 18px;
-  z-index: 999;
-  letter-spacing: 5px;
-  transition: opacity 0.5s ease;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
 }
 
 #loader.hidden {
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 }
 
+/* Animated gradient background */
+.loader-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(ellipse at 20% 80%, rgba(170, 0, 255, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(255, 0, 102, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.8) 0%, transparent 70%),
+    linear-gradient(180deg, #0a0010 0%, #050008 50%, #000005 100%);
+  animation: bgPulse 4s ease-in-out infinite;
+}
+
+@keyframes bgPulse {
+  0%, 100% {
+    background: 
+      radial-gradient(ellipse at 20% 80%, rgba(170, 0, 255, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(255, 0, 102, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.8) 0%, transparent 70%),
+      linear-gradient(180deg, #0a0010 0%, #050008 50%, #000005 100%);
+  }
+  50% {
+    background: 
+      radial-gradient(ellipse at 30% 70%, rgba(170, 0, 255, 0.5) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 30%, rgba(255, 0, 102, 0.5) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.7) 0%, transparent 70%),
+      linear-gradient(180deg, #0a0015 0%, #080010 50%, #000008 100%);
+  }
+}
+
+/* Scanline overlay */
+.loader-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.3) 2px,
+    rgba(0, 0, 0, 0.3) 4px
+  );
+  pointer-events: none;
+}
+
+/* Neon grid overlay */
+.loader-bg::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    linear-gradient(90deg, transparent 49.5%, rgba(170, 0, 255, 0.1) 50%, transparent 50.5%),
+    linear-gradient(0deg, transparent 49.5%, rgba(255, 0, 102, 0.1) 50%, transparent 50.5%);
+  background-size: 100px 100px;
+  animation: gridMove 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes gridMove {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(100px, 100px); }
+}
+
+.loader-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.loader-logo {
+  width: 300px;
+  max-width: 80vw;
+  height: auto;
+  margin-bottom: 40px;
+  animation: logoGlow 2s ease-in-out infinite, logoFloat 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(170, 0, 255, 0.5)) 
+          drop-shadow(0 0 40px rgba(255, 0, 102, 0.3));
+}
+
+@keyframes logoGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 20px rgba(170, 0, 255, 0.5)) 
+            drop-shadow(0 0 40px rgba(255, 0, 102, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 30px rgba(170, 0, 255, 0.8)) 
+            drop-shadow(0 0 60px rgba(255, 0, 102, 0.5));
+  }
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.loader-text {
+  font-family: 'Orbitron', 'Share Tech Mono', monospace;
+  font-size: 16px;
+  letter-spacing: 8px;
+  color: #aa88ff;
+  text-shadow: 0 0 10px rgba(170, 0, 255, 0.8);
+  margin-bottom: 20px;
+  animation: textPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes textPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
 .loader-bar {
-  width: 200px;
-  height: 2px;
-  background: #333;
-  margin-top: 10px;
+  width: 250px;
+  height: 3px;
+  background: rgba(170, 0, 255, 0.2);
+  border-radius: 2px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 0 10px rgba(170, 0, 255, 0.3);
 }
 
 .loader-bar::after {
@@ -61,17 +181,19 @@ body {
   top: 0;
   left: 0;
   height: 100%;
-  width: 50%;
-  background: #00ffcc;
-  animation: load 1s infinite linear;
+  width: 40%;
+  background: linear-gradient(90deg, #aa00ff, #ff0066, #aa00ff);
+  border-radius: 2px;
+  animation: load 1.2s ease-in-out infinite;
+  box-shadow: 0 0 15px rgba(255, 0, 102, 0.8);
 }
 
 @keyframes load {
   0% { transform: translateX(-100%); }
-  100% { transform: translateX(200%); }
+  100% { transform: translateX(350%); }
 }
 
-/* === ACTION BUTTON (3D DÜNYA ÜZERİNDEKİ BUTON) === */
+/* === ACTION BUTTON === */
 #action-button {
   position: absolute;
   top: 0;
@@ -128,7 +250,7 @@ body {
   display: flex;
 }
 
-/* === GAME MODAL (HUD SİSTEMİ) === */
+/* === GAME MODAL (HUD SYSTEM) === */
 #game-modal {
   width: 550px;
   max-width: 90%;
@@ -234,7 +356,7 @@ body {
   font-size: 10px;
 }
 
-/* === DEFI ROW (İÇERİK SATIRLARI) === */
+/* === DEFI ROW === */
 .defi-row {
   display: flex;
   justify-content: space-between;
@@ -346,6 +468,15 @@ body {
 
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
+  .loader-logo {
+    width: 200px;
+  }
+  
+  .loader-text {
+    font-size: 12px;
+    letter-spacing: 4px;
+  }
+
   #game-modal {
     width: 95%;
     margin: 10px;
@@ -367,6 +498,10 @@ body {
 }
 
 @media (max-width: 480px) {
+  .loader-logo {
+    width: 150px;
+  }
+
   .modal-body {
     padding: 15px;
   }
@@ -381,4 +516,3 @@ body {
     font-size: 16px;
   }
 }
-

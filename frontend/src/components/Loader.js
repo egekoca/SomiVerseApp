@@ -1,6 +1,6 @@
 /**
  * Loader Component
- * Loading screen shown while game initializes
+ * Loading screen with SomiVerse logo
  */
 export class Loader {
   constructor() {
@@ -12,13 +12,17 @@ export class Loader {
     this.element = document.createElement('div');
     this.element.id = 'loader';
     this.element.innerHTML = `
-      CONNECTING TO SYSTEM...
-      <div class="loader-bar"></div>
+      <div class="loader-bg"></div>
+      <div class="loader-content">
+        <img src="/Somi.png" alt="SomiVerse" class="loader-logo" />
+        <div class="loader-text">CONNECTING TO SYSTEM...</div>
+        <div class="loader-bar"></div>
+      </div>
     `;
     document.body.appendChild(this.element);
   }
 
-  hide(delay = 800) {
+  hide(delay = 1500) {
     setTimeout(() => {
       this.element.classList.add('hidden');
     }, delay);
@@ -29,10 +33,10 @@ export class Loader {
   }
 
   setText(text) {
-    this.element.innerHTML = `
-      ${text}
-      <div class="loader-bar"></div>
-    `;
+    const textEl = this.element.querySelector('.loader-text');
+    if (textEl) {
+      textEl.textContent = text;
+    }
   }
 
   destroy() {
