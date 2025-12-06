@@ -213,11 +213,6 @@ export class Billboards {
     
     this.billboards[this.billboards.length - 1].screenGlow = screenGlow;
 
-    // === GROUND REFLECTION LIGHT ===
-    const groundLight = new THREE.PointLight(0x4488ff, 0.8, 15);
-    groundLight.position.set(0, 1, 2);
-    group.add(groundLight);
-
     this.scene.add(group);
   }
 
@@ -287,6 +282,7 @@ export class Billboards {
       if (billboard.screenGlow) {
         billboard.screenGlow.intensity = 1.5 * pulse;
       }
+
 
       // Occasional screen flicker (very rare, subtle)
       if (Math.random() < 0.0005) {

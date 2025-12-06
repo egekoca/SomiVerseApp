@@ -11,6 +11,9 @@ build/
 .env.local
 .env.*.local
 
+# Faucet config (contains private keys!)
+**/faucet.config.local.js
+
 # IDE
 .idea/
 .vscode/
