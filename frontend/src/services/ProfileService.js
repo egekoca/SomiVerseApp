@@ -1,9 +1,9 @@
 /**
  * ProfileService
- * Manages user profiles, XP, and NFTs
+ * Manages user profiles, XP, and NFTs via Backend API
  */
 
-const STORAGE_KEY = 'somiverse_profiles';
+const API_URL = 'http://localhost:4000/api';
 
 class ProfileServiceClass {
   constructor() {
@@ -11,197 +11,128 @@ class ProfileServiceClass {
   }
 
   /**
-   * Get all profiles from storage
+   * Helper for API requests
    */
-  getAllProfiles() {
+  async request(endpoint, options = {}) {
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      return data ? JSON.parse(data) : {};
-    } catch (e) {
-      console.error('Error reading profiles:', e);
-      return {};
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        ...options
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API Request failed:', error);
+      return null;
     }
   }
 
   /**
-   * Save all profiles to storage
+   * Get or create profile (Login)
    */
-  saveProfiles(profiles) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles));
-    } catch (e) {
-      console.error('Error saving profiles:', e);
-    }
-  }
+  async getOrCreateProfile(walletAddress) {
+    if (!walletAddress) return null;
 
-  /**
-   * Check if profile exists for wallet
-   */
-  profileExists(walletAddress) {
-    const profiles = this.getAllProfiles();
-    return !!profiles[walletAddress.toLowerCase()];
-  }
+    // Call backend to find or create
+    const profile = await this.request(`/profile/${walletAddress}`, {
+      method: 'POST', // Using POST for "create or update" semantics
+      body: JSON.stringify({}) 
+    });
 
-  /**
-   * Create new profile for wallet
-   */
-  createProfile(walletAddress) {
-    const profiles = this.getAllProfiles();
-    const address = walletAddress.toLowerCase();
-
-    if (profiles[address]) {
-      return profiles[address];
+    if (profile) {
+      this.currentProfile = profile;
     }
 
-    const newProfile = {
-      walletAddress: address,
-      displayAddress: walletAddress,
-      avatar: 'titan-mech', // Default avatar
-      xp: 0,
-      level: 1,
-      nfts: [],
-      stats: {
-        swapsCompleted: 0,
-        lendingActions: 0,
-        nftsMinted: 0,
-        faucetClaims: 0
-      },
-      achievements: [],
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString()
-    };
-
-    profiles[address] = newProfile;
-    this.saveProfiles(profiles);
-    this.currentProfile = newProfile;
-
-    console.log('Profile created for:', address);
-    return newProfile;
+    return profile;
   }
 
   /**
    * Get profile by wallet address
    */
-  getProfile(walletAddress) {
-    const profiles = this.getAllProfiles();
-    const address = walletAddress.toLowerCase();
-    return profiles[address] || null;
-  }
-
-  /**
-   * Get or create profile
-   */
-  getOrCreateProfile(walletAddress) {
-    let profile = this.getProfile(walletAddress);
-    
-    if (!profile) {
-      profile = this.createProfile(walletAddress);
-    } else {
-      // Update last login
-      profile.lastLogin = new Date().toISOString();
-      this.updateProfile(walletAddress, profile);
-    }
-
-    this.currentProfile = profile;
-    return profile;
-  }
-
-  /**
-   * Update profile
-   */
-  updateProfile(walletAddress, updates) {
-    const profiles = this.getAllProfiles();
-    const address = walletAddress.toLowerCase();
-
-    if (profiles[address]) {
-      profiles[address] = { ...profiles[address], ...updates };
-      this.saveProfiles(profiles);
-      this.currentProfile = profiles[address];
-      return profiles[address];
-    }
-    return null;
+  async getProfile(walletAddress) {
+    return await this.request(`/profile/${walletAddress}`);
   }
 
   /**
    * Add XP to profile
    */
-  addXP(walletAddress, amount) {
-    const profile = this.getProfile(walletAddress);
-    if (profile) {
-      const newXP = profile.xp + amount;
-      const newLevel = this.calculateLevel(newXP);
-      
-      this.updateProfile(walletAddress, {
-        xp: newXP,
-        level: newLevel
-      });
+  async addXP(walletAddress, amount) {
+    const response = await this.request(`/profile/${walletAddress}/xp`, {
+      method: 'POST',
+      body: JSON.stringify({ amount })
+    });
+
+    if (response) {
+      // Update local cache if it matches current profile
+      if (this.currentProfile && this.currentProfile.wallet_address === walletAddress) {
+        this.currentProfile.xp = response.xp;
+        this.currentProfile.level = response.level;
+        this.currentProfile.visual_config = response.visual_config;
+      }
 
       // Dispatch XP event
       window.dispatchEvent(new CustomEvent('xpGained', {
-        detail: { amount, totalXP: newXP, level: newLevel }
+        detail: { amount, totalXP: response.xp, level: response.level }
       }));
-
-      return { xp: newXP, level: newLevel };
+      
+      // If visual config changed, we might want to dispatch an event for that too
+      if (response.visual_config) {
+         window.dispatchEvent(new CustomEvent('visualsUpdated', {
+            detail: response.visual_config
+         }));
+      }
     }
-    return null;
-  }
 
-  /**
-   * Calculate level from XP
-   */
-  calculateLevel(xp) {
-    // Level thresholds: 0, 100, 300, 600, 1000, 1500, 2100...
-    // Formula: level n requires n*(n-1)*50 XP
-    let level = 1;
-    let requiredXP = 0;
-    
-    while (xp >= requiredXP) {
-      level++;
-      requiredXP = level * (level - 1) * 50;
-    }
-    
-    return level - 1;
-  }
-
-  /**
-   * Get XP required for next level
-   */
-  getXPForNextLevel(currentLevel) {
-    return (currentLevel + 1) * currentLevel * 50;
+    return response;
   }
 
   /**
    * Add NFT to profile
    */
-  addNFT(walletAddress, nft) {
-    const profile = this.getProfile(walletAddress);
-    if (profile) {
-      const nfts = [...profile.nfts, {
-        ...nft,
-        id: `nft_${Date.now()}`,
-        mintedAt: new Date().toISOString()
-      }];
-      
-      this.updateProfile(walletAddress, { nfts });
-      return nfts;
+  async addNFT(walletAddress, nft) {
+    const newNFT = await this.request(`/profile/${walletAddress}/nft`, {
+      method: 'POST',
+      body: JSON.stringify(nft)
+    });
+
+    if (newNFT && this.currentProfile && this.currentProfile.wallet_address === walletAddress) {
+      this.currentProfile.nfts.push(newNFT);
     }
-    return null;
+
+    return newNFT;
   }
 
   /**
    * Update stats
    */
-  updateStats(walletAddress, statKey, increment = 1) {
-    const profile = this.getProfile(walletAddress);
-    if (profile && profile.stats[statKey] !== undefined) {
-      const stats = {
-        ...profile.stats,
-        [statKey]: profile.stats[statKey] + increment
-      };
-      this.updateProfile(walletAddress, { stats });
-      return stats;
+  async updateStats(walletAddress, statKey, increment = 1) {
+    const stats = await this.request(`/profile/${walletAddress}/stats`, {
+      method: 'PATCH',
+      body: JSON.stringify({ stat: statKey, increment })
+    });
+
+    if (stats && this.currentProfile && this.currentProfile.wallet_address === walletAddress) {
+      this.currentProfile.stats = stats;
     }
-    return null;
+
+    return stats;
+  }
+
+  /**
+   * Update position
+   */
+  async updatePosition(walletAddress, pos) {
+    // Optimization: Don't wait for response
+    this.request(`/profile/${walletAddress}/position`, {
+      method: 'POST',
+      body: JSON.stringify(pos)
+    });
   }
 
   /**
@@ -217,9 +148,13 @@ class ProfileServiceClass {
   clearCurrentProfile() {
     this.currentProfile = null;
   }
+  
+  // Helpers for calculations (Client side prediction if needed, but truth is on server)
+  getXPForNextLevel(currentLevel) {
+    return (currentLevel + 1) * currentLevel * 50;
+  }
 }
 
 // Singleton instance
 export const ProfileService = new ProfileServiceClass();
 export default ProfileService;
-

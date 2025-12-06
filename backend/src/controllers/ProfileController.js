@@ -1,78 +1,57 @@
 /**
  * ProfileController
- * Handles profile-related operations
+ * Handles profile-related operations using Supabase via User model
  */
-
-// In-memory storage (replace with database in production)
-const profiles = new Map();
+import { User } from '../models/User.js';
 
 export class ProfileController {
   /**
    * Get profile by wallet address
    */
-  static getProfile(req, res) {
+  static async getProfile(req, res) {
     const { address } = req.params;
     
     if (!address) {
       return res.status(400).json({ error: 'Wallet address required' });
     }
 
-    const normalizedAddress = address.toLowerCase();
-    const profile = profiles.get(normalizedAddress);
+    try {
+      const user = await User.findByAddress(address);
 
-    if (!profile) {
-      return res.status(404).json({ error: 'Profile not found' });
+      if (!user) {
+        return res.status(404).json({ error: 'Profile not found' });
+      }
+
+      res.json(user);
+    } catch (error) {
+      console.error('Get Profile Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-
-    res.json(profile);
   }
 
   /**
-   * Create or update profile
+   * Create or update profile (Login/Connect)
    */
-  static createOrUpdateProfile(req, res) {
+  static async createOrUpdateProfile(req, res) {
     const { address } = req.params;
-    const updates = req.body;
 
     if (!address) {
       return res.status(400).json({ error: 'Wallet address required' });
     }
 
-    const normalizedAddress = address.toLowerCase();
-    let profile = profiles.get(normalizedAddress);
-
-    if (!profile) {
-      // Create new profile
-      profile = {
-        walletAddress: normalizedAddress,
-        displayAddress: address,
-        avatar: 'titan-mech',
-        xp: 0,
-        level: 1,
-        nfts: [],
-        stats: {
-          swapsCompleted: 0,
-          lendingActions: 0,
-          nftsMinted: 0,
-          faucetClaims: 0
-        },
-        achievements: [],
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString()
-      };
-    } else {
-      // Update existing profile
-      profile = { ...profile, ...updates, lastLogin: new Date().toISOString() };
+    try {
+      const user = await User.findOrCreate(address);
+      res.json(user);
+    } catch (error) {
+      console.error('Create/Update Profile Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-
-    profiles.set(normalizedAddress, profile);
-    res.json(profile);
   }
 
   /**
    * Add XP to profile
    */
-  static addXP(req, res) {
+  static async addXP(req, res) {
     const { address } = req.params;
     const { amount } = req.body;
 
@@ -80,28 +59,31 @@ export class ProfileController {
       return res.status(400).json({ error: 'Wallet address and XP amount required' });
     }
 
-    const normalizedAddress = address.toLowerCase();
-    const profile = profiles.get(normalizedAddress);
+    try {
+      let user = await User.findByAddress(address);
+      
+      if (!user) {
+        return res.status(404).json({ error: 'Profile not found' });
+      }
 
-    if (!profile) {
-      return res.status(404).json({ error: 'Profile not found' });
+      user = await user.addXP(amount);
+
+      res.json({
+        xp: user.xp,
+        level: user.level,
+        added: amount,
+        visual_config: user.visual_config // Return visual updates
+      });
+    } catch (error) {
+      console.error('Add XP Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-
-    profile.xp += amount;
-    profile.level = ProfileController.calculateLevel(profile.xp);
-    profiles.set(normalizedAddress, profile);
-
-    res.json({
-      xp: profile.xp,
-      level: profile.level,
-      added: amount
-    });
   }
 
   /**
    * Add NFT to profile
    */
-  static addNFT(req, res) {
+  static async addNFT(req, res) {
     const { address } = req.params;
     const nft = req.body;
 
@@ -109,30 +91,25 @@ export class ProfileController {
       return res.status(400).json({ error: 'Wallet address and NFT data required' });
     }
 
-    const normalizedAddress = address.toLowerCase();
-    const profile = profiles.get(normalizedAddress);
+    try {
+      let user = await User.findByAddress(address);
 
-    if (!profile) {
-      return res.status(404).json({ error: 'Profile not found' });
+      if (!user) {
+        return res.status(404).json({ error: 'Profile not found' });
+      }
+
+      const newNFT = await user.addNFT(nft);
+      res.json(newNFT);
+    } catch (error) {
+      console.error('Add NFT Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-
-    const newNFT = {
-      ...nft,
-      id: `nft_${Date.now()}`,
-      mintedAt: new Date().toISOString()
-    };
-
-    profile.nfts.push(newNFT);
-    profile.stats.nftsMinted++;
-    profiles.set(normalizedAddress, profile);
-
-    res.json(newNFT);
   }
 
   /**
    * Update stats
    */
-  static updateStats(req, res) {
+  static async updateStats(req, res) {
     const { address } = req.params;
     const { stat, increment = 1 } = req.body;
 
@@ -140,55 +117,61 @@ export class ProfileController {
       return res.status(400).json({ error: 'Wallet address and stat key required' });
     }
 
-    const normalizedAddress = address.toLowerCase();
-    const profile = profiles.get(normalizedAddress);
+    try {
+      let user = await User.findByAddress(address);
 
-    if (!profile) {
-      return res.status(404).json({ error: 'Profile not found' });
+      if (!user) {
+        return res.status(404).json({ error: 'Profile not found' });
+      }
+
+      const stats = await user.updateStat(stat, increment);
+      res.json(stats);
+    } catch (error) {
+      console.error('Update Stats Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Update Position
+   */
+  static async updatePosition(req, res) {
+    const { address } = req.params;
+    const { x, y, z } = req.body;
+
+    if (!address || x === undefined || z === undefined) {
+      return res.status(400).json({ error: 'Wallet address and position (x, z) required' });
     }
 
-    if (profile.stats[stat] !== undefined) {
-      profile.stats[stat] += increment;
-      profiles.set(normalizedAddress, profile);
-    }
+    try {
+      let user = await User.findByAddress(address);
 
-    res.json(profile.stats);
+      if (!user) {
+        return res.status(404).json({ error: 'Profile not found' });
+      }
+
+      const newPos = await user.updatePosition({ x, y: y || 0, z });
+      res.json(newPos);
+    } catch (error) {
+      console.error('Update Position Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
 
   /**
    * Get leaderboard
    */
-  static getLeaderboard(req, res) {
+  static async getLeaderboard(req, res) {
     const { limit = 10 } = req.query;
 
-    const leaderboard = Array.from(profiles.values())
-      .sort((a, b) => b.xp - a.xp)
-      .slice(0, parseInt(limit))
-      .map((p, index) => ({
-        rank: index + 1,
-        address: `${p.displayAddress.slice(0, 6)}...${p.displayAddress.slice(-4)}`,
-        level: p.level,
-        xp: p.xp
-      }));
-
-    res.json(leaderboard);
-  }
-
-  /**
-   * Calculate level from XP
-   */
-  static calculateLevel(xp) {
-    let level = 1;
-    let requiredXP = 0;
-    
-    while (xp >= requiredXP) {
-      level++;
-      requiredXP = level * (level - 1) * 50;
+    try {
+      const leaderboard = await User.getLeaderboard(parseInt(limit));
+      res.json(leaderboard);
+    } catch (error) {
+      console.error('Leaderboard Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-    
-    return level - 1;
   }
 }
 
 export default ProfileController;
-

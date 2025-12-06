@@ -39,6 +39,7 @@ import {
 
 // Config
 import { CONFIG } from './config.js';
+import { ProfileService } from '../services/ProfileService.js';
 
 /**
  * Main Game Class
@@ -66,6 +67,9 @@ export class Game {
     this.isRunning = false;
     this.animationId = null;
     this.clock = new THREE.Clock();
+    
+    this.lastPositionSave = 0;
+    this.saveInterval = 5000; // Save every 5 seconds
   }
 
   async init() {
@@ -106,6 +110,13 @@ export class Game {
       this.inputSystem.enable();
     });
 
+    // Input Action (Enter Key)
+    this.inputSystem.onAction(() => {
+      if (this.interactionSystem.interact()) {
+        this.inputSystem.disable();
+      }
+    });
+
     // Resize handler
     window.addEventListener('resize', () => this.onResize());
 
@@ -113,6 +124,20 @@ export class Game {
     if (this.loader) {
       this.loader.hide();
     }
+
+    // Player Reset Logic on Wallet Changes
+    window.addEventListener('walletConnected', (e) => {
+      this.handleWalletConnected(e.detail);
+    });
+
+    window.addEventListener('walletDisconnected', () => {
+      this.resetPlayerState();
+    });
+    
+    // Save position before unload
+    window.addEventListener('beforeunload', () => {
+      this.savePlayerPosition();
+    });
 
     return this;
   }
@@ -206,6 +231,51 @@ export class Game {
     this.sceneManager.add(this.player.getMesh());
   }
 
+  handleWalletConnected(detail) {
+    const { profile } = detail;
+    
+    console.log('Wallet Connected. Profile Data:', profile);
+    
+    if (this.player && profile) {
+      // Check if profile has saved position
+      // FIX: Don't check for 0.1 threshold, load whatever is saved
+      if (profile.position && typeof profile.position.x === 'number') {
+        
+        const x = Number(profile.position.x);
+        const z = Number(profile.position.z);
+
+        // If saved position is exactly 0,0,0 (spawn), it's fine to load it
+        this.player.getMesh().position.set(x, 0, z);
+        this.cameraManager.followTarget(this.player.getPosition());
+        
+        // Sync local saved pos so we don't re-save immediately
+        this.lastSavedPos = { x, y: 0, z };
+        
+        console.log('Player LOADED at saved position:', {x, z});
+      } else {
+        // No saved position object -> Reset to start
+        console.log('No valid position data. Resetting to spawn.');
+        this.resetPlayerState(profile);
+      }
+
+      // Apply visuals
+      if (profile.visual_config) {
+        // TODO: Implement visual updates
+      }
+    }
+  }
+
+  /**
+   * Resets player position to spawn
+   */
+  resetPlayerState(profileData = null) {
+    if (this.player) {
+      this.player.resetPosition();
+      this.cameraManager.followTarget(this.player.getPosition());
+      console.log('Player reset to spawn point.');
+    }
+  }
+
   start() {
     this.isRunning = true;
     this.animate();
@@ -224,9 +294,16 @@ export class Game {
     this.animationId = requestAnimationFrame(() => this.animate());
     
     const deltaTime = this.clock.getDelta();
+    const now = Date.now();
 
     // Update player movement
     this.updatePlayer();
+
+    // Save position periodically if connected
+    if (now - this.lastPositionSave > this.saveInterval) {
+      this.savePlayerPosition();
+      this.lastPositionSave = now;
+    }
 
     // Update highway cars
     if (this.highways) {
@@ -261,6 +338,26 @@ export class Game {
       this.cameraManager.followTarget(this.player.getPosition());
     } else {
       this.player.animateWalk(false);
+    }
+  }
+  
+  savePlayerPosition() {
+    const profile = ProfileService.getCurrentProfile();
+    // Only save if we have a profile AND the player is active
+    if (profile && this.player) {
+      const pos = this.player.getPosition();
+      const posData = { x: pos.x, y: pos.y, z: pos.z };
+      
+      // Optimization: Don't save if didn't move significantly since last save
+      if (this.lastSavedPos && 
+          Math.abs(this.lastSavedPos.x - pos.x) < 0.5 && 
+          Math.abs(this.lastSavedPos.z - pos.z) < 0.5) {
+        return;
+      }
+
+      console.log('Saving player position:', posData);
+      ProfileService.updatePosition(profile.wallet_address, posData);
+      this.lastSavedPos = { ...posData };
     }
   }
 

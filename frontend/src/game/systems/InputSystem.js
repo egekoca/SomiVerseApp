@@ -18,6 +18,7 @@ export class InputSystem {
     };
     
     this.enabled = true;
+    this.actionCallback = null;
     this.setupEventListeners();
   }
 
@@ -26,11 +27,21 @@ export class InputSystem {
     window.addEventListener('keyup', (e) => this.handleKey(e, false));
   }
 
+  onAction(callback) {
+    this.actionCallback = callback;
+  }
+
   handleKey(e, state) {
     if (!this.enabled) return;
     
     const k = e.key.toLowerCase();
     
+    // Action key (Enter) - Trigger only on key down
+    if (k === 'enter' && state && this.actionCallback) {
+      this.actionCallback();
+      return;
+    }
+
     if (['w', 'arrowup'].includes(k)) {
       this.keys.w = state;
       this.keys.up = state;
@@ -86,4 +97,3 @@ export class InputSystem {
 }
 
 export default InputSystem;
-

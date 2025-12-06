@@ -16,6 +16,7 @@ export class ProfileModal {
     this.animationId = null;
     this.isDragging = false;
     this.previousMousePosition = { x: 0, y: 0 };
+    this.currentAddress = null; // Track current address for updates
     this.create();
   }
 
@@ -45,7 +46,7 @@ export class ProfileModal {
             <div class="profile-section">
               <div class="section-title">WALLET</div>
               <div class="wallet-display">
-                <span class="wallet-full-address"></span>
+                <span class="wallet-full-address">Loading...</span>
                 <button class="copy-btn" title="Copy">⧉</button>
               </div>
             </div>
@@ -114,29 +115,52 @@ export class ProfileModal {
     canvas.addEventListener('touchstart', (e) => this.onTouchStart(e));
     canvas.addEventListener('touchmove', (e) => this.onTouchMove(e));
     canvas.addEventListener('touchend', () => this.onMouseUp());
+
+    // Dynamic Updates (XP Gained, etc.)
+    window.addEventListener('xpGained', (e) => {
+      if (this.isOpen && this.currentAddress) {
+        // We can optimistically update UI or refetch
+        // Here we assume ProfileService has updated state, let's refetch to be sure
+        this.refreshProfile();
+      }
+    });
+    
+    // Listen for new NFTs or other updates if implemented
+    // window.addEventListener('nftMinted', ...) 
   }
 
-  open(walletAddress) {
-    const profile = ProfileService.getOrCreateProfile(walletAddress);
-    if (!profile) return;
-
-    this.updateUI(profile);
+  async open(walletAddress) {
+    this.currentAddress = walletAddress;
     this.element.classList.add('active');
     this.isOpen = true;
-    
-    // Initialize 3D viewer
+
+    // Initialize 3D viewer immediately
     setTimeout(() => this.init3DViewer(), 100);
+
+    // Fetch and update data
+    await this.refreshProfile();
+  }
+
+  async refreshProfile() {
+    if (!this.currentAddress) return;
+    
+    // Fetch fresh data from backend
+    const profile = await ProfileService.getProfile(this.currentAddress);
+    if (profile) {
+      this.updateUI(profile);
+    }
   }
 
   close() {
     this.element.classList.remove('active');
     this.isOpen = false;
+    this.currentAddress = null;
     this.dispose3DViewer();
   }
 
   updateUI(profile) {
     // Wallet
-    this.element.querySelector('.wallet-full-address').textContent = profile.displayAddress;
+    this.element.querySelector('.wallet-full-address').textContent = profile.wallet_address || profile.displayAddress;
     
     // Level & XP
     this.element.querySelector('.level-number').textContent = profile.level;
@@ -144,27 +168,33 @@ export class ProfileModal {
     
     const nextLevelXP = ProfileService.getXPForNextLevel(profile.level);
     const prevLevelXP = profile.level > 1 ? ProfileService.getXPForNextLevel(profile.level - 1) : 0;
-    const progress = ((profile.xp - prevLevelXP) / (nextLevelXP - prevLevelXP)) * 100;
+    
+    // Prevent division by zero
+    const totalRange = nextLevelXP - prevLevelXP;
+    const progress = totalRange > 0 ? ((profile.xp - prevLevelXP) / totalRange) * 100 : 0;
     
     this.element.querySelector('.next-level-xp').textContent = nextLevelXP;
-    this.element.querySelector('.xp-fill').style.width = `${Math.min(progress, 100)}%`;
+    this.element.querySelector('.xp-fill').style.width = `${Math.min(Math.max(progress, 0), 100)}%`;
     
     // Stats
-    this.element.querySelector('.swaps-count').textContent = profile.stats.swapsCompleted;
-    this.element.querySelector('.lending-count').textContent = profile.stats.lendingActions;
-    this.element.querySelector('.minted-count').textContent = profile.stats.nftsMinted;
-    this.element.querySelector('.faucet-count').textContent = profile.stats.faucetClaims;
+    if (profile.stats) {
+      this.element.querySelector('.swaps-count').textContent = profile.stats.swapsCompleted || 0;
+      this.element.querySelector('.lending-count').textContent = profile.stats.lendingActions || 0;
+      this.element.querySelector('.minted-count').textContent = profile.stats.nftsMinted || 0;
+      this.element.querySelector('.faucet-count').textContent = profile.stats.faucetClaims || 0;
+    }
     
     // NFTs
+    const nfts = profile.nfts || [];
     const nftGrid = this.element.querySelector('.nft-grid');
     const noNfts = this.element.querySelector('.no-nfts');
     const nftCount = this.element.querySelector('.nft-count');
     
-    nftCount.textContent = `(${profile.nfts.length})`;
+    nftCount.textContent = `(${nfts.length})`;
     
-    if (profile.nfts.length > 0) {
+    if (nfts.length > 0) {
       noNfts.style.display = 'none';
-      nftGrid.innerHTML = profile.nfts.map(nft => `
+      nftGrid.innerHTML = nfts.map(nft => `
         <div class="nft-item" title="${nft.name || 'NFT'}">
           <div class="nft-icon">${nft.icon || '◆'}</div>
           <div class="nft-name">${nft.name || 'NFT'}</div>
@@ -177,17 +207,24 @@ export class ProfileModal {
   }
 
   copyAddress() {
-    const address = this.element.querySelector('.wallet-full-address').textContent;
-    navigator.clipboard.writeText(address).then(() => {
-      const btn = this.element.querySelector('.copy-btn');
-      btn.textContent = '✓';
-      setTimeout(() => btn.textContent = '⧉', 1500);
-    });
+    const addressElement = this.element.querySelector('.wallet-full-address');
+    const address = addressElement.textContent;
+    if (address && address !== 'Loading...') {
+      navigator.clipboard.writeText(address).then(() => {
+        const btn = this.element.querySelector('.copy-btn');
+        const originalText = btn.textContent;
+        btn.textContent = '✓';
+        setTimeout(() => btn.textContent = originalText, 1500);
+      });
+    }
   }
 
   init3DViewer() {
     const canvas = this.element.querySelector('#character-canvas');
     const container = this.element.querySelector('.character-viewer');
+    
+    if (!container || !canvas) return;
+
     const width = container.clientWidth;
     const height = container.clientHeight;
 
@@ -387,6 +424,8 @@ export class ProfileModal {
   }
 
   animate() {
+    if (!this.isOpen || !this.renderer) return;
+
     this.animationId = requestAnimationFrame(() => this.animate());
     
     // Subtle idle animation
@@ -461,4 +500,3 @@ export class ProfileModal {
 }
 
 export default ProfileModal;
-

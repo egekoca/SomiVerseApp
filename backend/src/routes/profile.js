@@ -26,5 +26,7 @@ router.post('/:address/nfts', ProfileController.addNFT);
 // Update stats
 router.post('/:address/stats', ProfileController.updateStats);
 
-export { router as profileRoutes };
+// Update position
+router.post('/:address/position', ProfileController.updatePosition);
 
+export { router as profileRoutes };

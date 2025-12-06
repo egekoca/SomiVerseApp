@@ -348,6 +348,13 @@ export class Player {
     return this.mesh.position;
   }
 
+  resetPosition() {
+    this.mesh.position.set(0, 0, 0);
+    this.mesh.rotation.set(0, 0, 0);
+    this.userData.walkTime = 0;
+    this.animateWalk(false);
+  }
+
   getMesh() {
     return this.mesh;
   }
