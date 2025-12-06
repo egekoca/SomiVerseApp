@@ -18,6 +18,8 @@ export class ProfileModal {
     this.previousMousePosition = { x: 0, y: 0 };
     this.currentAddress = null; // Track current address for updates
     this.characterNeonMat = null; // Store reference for updates
+    this.characterVisorMat = null; // Store reference for visor updates
+    this.characterThrusterMat = null; // Store reference for thruster updates
     this.create();
   }
 
@@ -162,9 +164,13 @@ export class ProfileModal {
     if (lvl >= 5) {
       // Level 5+: Neon Orange
       this.characterNeonMat.color.setHex(0xffaa00);
+      if (this.characterVisorMat) this.characterVisorMat.color.setHex(0xffaa00);
+      if (this.characterThrusterMat) this.characterThrusterMat.color.setHex(0xffaa00);
     } else {
       // Default: Neon Cyan
       this.characterNeonMat.color.setHex(0x00ffcc);
+      if (this.characterVisorMat) this.characterVisorMat.color.setHex(0x00ffff);
+      if (this.characterThrusterMat) this.characterThrusterMat.color.setHex(0x00ffcc);
     }
   }
 
@@ -325,6 +331,7 @@ export class ProfileModal {
       transparent: true,
       opacity: 0.8
     });
+    this.characterVisorMat = visorMat;
 
     // Torso
     const torso = new THREE.Mesh(
@@ -438,7 +445,8 @@ export class ProfileModal {
     this.character.add(jetpack);
 
     // Thrusters
-    const thrusterMat = new THREE.MeshBasicMaterial({ color: 0xff6600 });
+    const thrusterMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc }); // Default to match neon
+    this.characterThrusterMat = thrusterMat;
     const thrusterGeo = new THREE.CylinderGeometry(0.08, 0.1, 0.15, 8);
     
     const leftThruster = new THREE.Mesh(thrusterGeo, thrusterMat);

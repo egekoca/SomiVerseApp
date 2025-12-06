@@ -2102,3 +2102,30 @@ button#header-connect.hidden {
 .profile-section .xp-text {
   color: #ff0066 !important;
 }
+
+/* === STATS LABELS COLOR FIX === */
+/* Ensure labels match their box colors (User Request) */
+
+/* SWAP: Cyan/Blue */
+.stat-swap .stat-label {
+  color: #00aaff !important;
+  text-shadow: 0 0 5px rgba(0, 170, 255, 0.6) !important;
+}
+
+/* LENDING: Pink/Red */
+.stat-lend .stat-label {
+  color: #ff0066 !important;
+  text-shadow: 0 0 5px rgba(255, 0, 102, 0.6) !important;
+}
+
+/* MINTED: Green */
+.stat-mint .stat-label {
+  color: #00ff99 !important;
+  text-shadow: 0 0 5px rgba(0, 255, 153, 0.6) !important;
+}
+
+/* CLAIMS: Orange/Gold */
+.stat-faucet .stat-label {
+  color: #ffaa00 !important;
+  text-shadow: 0 0 5px rgba(255, 170, 0, 0.6) !important;
+}
