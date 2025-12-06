@@ -640,6 +640,7 @@ body {
   color: #0088cc;
 }
 .stat-swap:hover {
+  transform: translateY(-2px);
   border-color: #00aaff;
   box-shadow: 0 0 15px rgba(0, 170, 255, 0.3);
 }
@@ -656,6 +657,7 @@ body {
   color: #cc0055;
 }
 .stat-lend:hover {
+  transform: translateY(-2px);
   border-color: #ff0066;
   box-shadow: 0 0 15px rgba(255, 0, 102, 0.3);
 }
@@ -672,6 +674,7 @@ body {
   color: #00cc66;
 }
 .stat-mint:hover {
+  transform: translateY(-2px);
   border-color: #00ff88;
   box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
 }
@@ -688,6 +691,7 @@ body {
   color: #cc8800;
 }
 .stat-faucet:hover {
+  transform: translateY(-2px);
   border-color: #ffaa00;
   box-shadow: 0 0 15px rgba(255, 170, 0, 0.3);
 }
