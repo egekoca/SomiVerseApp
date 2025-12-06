@@ -16,6 +16,7 @@ import { Highways } from './world/Highways.js';
 import { BackgroundCity } from './world/BackgroundCity.js';
 import { ZoneManager } from './world/ZoneManager.js';
 import { Billboards } from './world/Billboards.js';
+import { HugeBillboards } from './world/HugeBillboards.js';
 
 // Systems
 import { InputSystem } from './systems/InputSystem.js';
@@ -60,6 +61,7 @@ export class Game {
     this.zoneManager = null;
     this.highways = null;
     this.billboards = null;
+    this.hugeBillboards = null;
     
     this.inputSystem = null;
     this.interactionSystem = null;
@@ -72,6 +74,10 @@ export class Game {
     this.saveInterval = 5000; // Save every 5 seconds
 
     this.physicsColliders = []; // Store collision boxes for physics
+
+    // Raycaster for click interactions
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
   }
 
   async init() {
@@ -122,6 +128,10 @@ export class Game {
     // Resize handler
     window.addEventListener('resize', () => this.onResize());
 
+    // Click handler for scene interactions (e.g. billboards)
+    window.addEventListener('click', (e) => this.onSceneClick(e));
+    window.addEventListener('mousemove', (e) => this.onMouseMove(e));
+
     // Hide loader
     if (this.loader) {
       this.loader.hide();
@@ -157,6 +167,64 @@ export class Game {
     return this;
   }
 
+  onSceneClick(event) {
+    if (this.modal.isOpen) return;
+
+    // Calculate mouse position in normalized device coordinates (-1 to +1)
+    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    // Update the picking ray with the camera and mouse position
+    this.raycaster.setFromCamera(this.mouse, this.cameraManager.getCamera());
+
+    // Check intersections with huge billboards
+    if (this.hugeBillboards) {
+      const meshes = this.hugeBillboards.getBillboards();
+      const intersects = this.raycaster.intersectObjects(meshes, true);
+
+      for (let i = 0; i < intersects.length; i++) {
+        // Traverse up to find user data
+        let obj = intersects[i].object;
+        while (obj) {
+          if (obj.userData && obj.userData.isLink) {
+            window.open(obj.userData.url, '_blank');
+            return;
+          }
+          obj = obj.parent;
+        }
+      }
+    }
+  }
+
+  onMouseMove(event) {
+    if (this.modal.isOpen || !this.hugeBillboards) return;
+
+    // Calculate mouse position
+    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    this.raycaster.setFromCamera(this.mouse, this.cameraManager.getCamera());
+
+    const meshes = this.hugeBillboards.getBillboards();
+    const intersects = this.raycaster.intersectObjects(meshes, true);
+    
+    let isHoveringLink = false;
+    for (let i = 0; i < intersects.length; i++) {
+      let obj = intersects[i].object;
+      while (obj) {
+        if (obj.userData && obj.userData.isLink) {
+          isHoveringLink = true;
+          break;
+        }
+        obj = obj.parent;
+      }
+      if (isHoveringLink) break;
+    }
+
+    // Change cursor style
+    document.body.style.cursor = isHoveringLink ? 'pointer' : 'default';
+  }
+
   async createWorld() {
     const scene = this.sceneManager.getScene();
 
@@ -177,6 +245,10 @@ export class Game {
     // LED Billboards
     this.billboards = new Billboards(scene);
     await this.billboards.create();
+
+    // Huge Boundary Billboards
+    this.hugeBillboards = new HugeBillboards(scene);
+    await this.hugeBillboards.create();
 
     // Interactive buildings
     this.createInteractiveBuildings();
