@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CONFIG } from '../config.js';
 
 /**
@@ -6,6 +7,9 @@ import { CONFIG } from '../config.js';
  * 3D model creator functions for each building type
  * Buildings are more visible with lighter colors and bright neon
  */
+
+// GLB Loader instance
+const gltfLoader = new GLTFLoader();
 
 function setAlwaysVisible(mesh) {
   mesh.frustumCulled = false;
@@ -186,18 +190,43 @@ export function buildLendingTower(group) {
     group.add(line);
   }
 
-  // Rotating dollar symbol - BRIGHT GOLD
-  const dollar = new THREE.Mesh(
-    new THREE.TorusGeometry(8, 1.5, 16, 48),
-    new THREE.MeshBasicMaterial({ color: 0xffdd00, fog: false })
-  );
-  dollar.position.y = 60;
-  setAlwaysVisible(dollar);
-  group.add(dollar);
+  // Somnia Logo (3D GLB model) - Rotating
+  const logoContainer = new THREE.Group();
+  logoContainer.position.y = 60;
+  group.add(logoContainer);
   
-  group.userData.animItem = dollar;
+  // Load Somnia 3D logo
+  gltfLoader.load('/base.glb', (gltf) => {
+    const model = gltf.scene;
+    
+    // Scale and position the model
+    model.scale.set(12, 12, 12);
+    
+    // Make all meshes glow with pink/magenta color
+    model.traverse((child) => {
+      if (child.isMesh) {
+        child.material = new THREE.MeshBasicMaterial({ 
+          color: 0xff0088, 
+          fog: false 
+        });
+        child.frustumCulled = false;
+      }
+    });
+    
+    logoContainer.add(model);
+  }, undefined, (error) => {
+    console.error('Error loading Somnia logo:', error);
+    // Fallback: create simple torus if GLB fails to load
+    const fallback = new THREE.Mesh(
+      new THREE.TorusGeometry(8, 1.5, 16, 48),
+      new THREE.MeshBasicMaterial({ color: 0xff0088, fog: false })
+    );
+    logoContainer.add(fallback);
+  });
+  
+  group.userData.animItem = logoContainer;
 
-  const neonText = createNeonText('LEND', 0xff0088, 72);
+  const neonText = createNeonText('LEND', 0xff0088, 90);
   group.add(neonText);
 }
 
