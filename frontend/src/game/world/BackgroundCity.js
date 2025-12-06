@@ -10,6 +10,7 @@ export class BackgroundCity {
     this.scene = scene;
     this.occupiedZones = occupiedZones;
     this.instancedBuildings = null;
+    this.colliders = []; // Store collision data for the game loop
     
     this.create();
   }
@@ -32,13 +33,22 @@ export class BackgroundCity {
 
       if (!this.checkCollision(x, z, w, d)) {
         buildingData.push({ x, z, w, d, h });
+        
+        // Mark as occupied for generation
         this.occupiedZones.push({ x, z, w: w + 5, d: d + 5 });
+        
+        // Add to Physics Colliders (tight bounds)
+        this.colliders.push({ x, z, w, d });
       }
     }
 
     this.createInstancedBuildings(buildingData);
     this.createRoofNeonLines(buildingData);
     this.createSideNeonStrips(buildingData);
+  }
+
+  getColliders() {
+    return this.colliders;
   }
 
   createInstancedBuildings(buildingData) {

@@ -70,6 +70,8 @@ export class Game {
     
     this.lastPositionSave = 0;
     this.saveInterval = 5000; // Save every 5 seconds
+
+    this.physicsColliders = []; // Store collision boxes for physics
   }
 
   async init() {
@@ -168,7 +170,9 @@ export class Game {
     this.highways = new Highways(scene);
 
     // Background buildings
-    new BackgroundCity(scene, this.zoneManager.getOccupiedZones());
+    const bgCity = new BackgroundCity(scene, this.zoneManager.getOccupiedZones());
+    // Add background buildings to physics collision
+    this.physicsColliders.push(...bgCity.getColliders());
 
     // LED Billboards
     this.billboards = new Billboards(scene);
@@ -181,6 +185,16 @@ export class Game {
   createInteractiveBuildings() {
     const scene = this.sceneManager.getScene();
     const dist = CONFIG.city.buildingDistance;
+
+    // Add Main Building Colliders (Box 30x30)
+    // These are slightly larger than meshes to prevent walking into base rings
+    const mainColliderSize = 30;
+    this.physicsColliders.push(
+      { x: dist, z: -dist, w: mainColliderSize, d: mainColliderSize }, // Swap
+      { x: -dist, z: -dist, w: mainColliderSize, d: mainColliderSize }, // Lend
+      { x: dist, z: dist, w: mainColliderSize, d: mainColliderSize }, // Mint
+      { x: -dist, z: dist, w: mainColliderSize, d: mainColliderSize } // Faucet
+    );
 
     // SWAP CITY
     const swapBuilding = new Building({
@@ -372,13 +386,55 @@ export class Game {
     );
   }
 
+  checkCollision(x, z) {
+    const playerSize = 2; // Approximate character width/depth
+    for (const box of this.physicsColliders) {
+      if (Math.abs(x - box.x) < (box.w + playerSize) / 2 &&
+          Math.abs(z - box.z) < (box.d + playerSize) / 2) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   updatePlayer() {
     if (this.modal.isOpen) return;
 
     const { dx, dz, isMoving } = this.inputSystem.getMovement();
     
     if (isMoving) {
-      this.player.move(dx, dz);
+      const currentPos = this.player.getPosition();
+      const nextX = currentPos.x + dx;
+      const nextZ = currentPos.z + dz;
+
+      // Check for collision at new position
+      if (!this.checkCollision(nextX, nextZ)) {
+        // Safe to move
+        this.player.move(dx, dz);
+      } else {
+        // Collision detected! Try sliding
+        let moved = false;
+
+        // Try moving X only
+        if (dx !== 0 && !this.checkCollision(nextX, currentPos.z)) {
+          this.player.move(dx, 0);
+          moved = true;
+        } 
+        // Try moving Z only
+        else if (dz !== 0 && !this.checkCollision(currentPos.x, nextZ)) {
+          this.player.move(0, dz);
+          moved = true;
+        }
+
+        // If neither worked, we are stuck or running into a corner. 
+        // We still need to update rotation to face the input direction even if blocked
+        if (!moved) {
+          // Manually update rotation to face input
+          this.player.getMesh().rotation.y = Math.atan2(dx, dz);
+          this.player.animateWalk(true); // Keep walking animation running "against wall"
+        }
+      }
+      
       this.cameraManager.followTarget(this.player.getPosition());
     } else {
       this.player.animateWalk(false);
