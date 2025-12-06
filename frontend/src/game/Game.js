@@ -467,6 +467,14 @@ export class Game {
 
   checkCollision(x, z) {
     const playerSize = 2; // Approximate character width/depth
+    const mapLimit = CONFIG.city.mapLimit;
+    
+    // Check map boundaries
+    if (Math.abs(x) > mapLimit || Math.abs(z) > mapLimit) {
+      return true;
+    }
+    
+    // Check building collisions
     for (const box of this.physicsColliders) {
       if (Math.abs(x - box.x) < (box.w + playerSize) / 2 &&
           Math.abs(z - box.z) < (box.d + playerSize) / 2) {

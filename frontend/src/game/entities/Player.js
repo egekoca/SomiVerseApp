@@ -114,8 +114,8 @@ export class Player {
     });
     
     this.nameLabel = new THREE.Sprite(material);
-    this.nameLabel.position.set(0, 3.2, 0); // Above head
-    this.nameLabel.scale.set(2.5, 0.625, 1); // Aspect ratio of canvas
+    this.nameLabel.position.set(0, 3.5, 0); // Above head
+    this.nameLabel.scale.set(2.75, 0.69, 1); // Aspect ratio of canvas (%10 bigger)
     
     this.mesh.add(this.nameLabel);
   }

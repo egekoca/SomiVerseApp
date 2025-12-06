@@ -31,7 +31,7 @@ export const CONFIG = {
   
   player: {
     speed: 0.8,
-    scale: 6,
+    scale: 6.6, // %10 bigger
     walkAnimationSpeed: 0.15
   },
   
