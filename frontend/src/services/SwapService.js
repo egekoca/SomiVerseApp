@@ -306,6 +306,45 @@ class SwapServiceClass {
   }
 
   /**
+   * Check if MetaMask is on correct network (Somnia)
+   */
+  async checkNetwork() {
+    if (!window.ethereum) {
+      throw new Error('No wallet detected');
+    }
+    
+    const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
+    const currentChainId = parseInt(chainIdHex, 16);
+    
+    if (currentChainId !== NETWORK_CONFIG.chainId) {
+      // Try to switch network
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x' + NETWORK_CONFIG.chainId.toString(16) }]
+        });
+      } catch (switchError) {
+        // Network not added, try to add it
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x' + NETWORK_CONFIG.chainId.toString(16),
+              chainName: NETWORK_CONFIG.chainName,
+              rpcUrls: [NETWORK_CONFIG.rpcUrl],
+              nativeCurrency: NETWORK_CONFIG.nativeCurrency,
+              blockExplorerUrls: [NETWORK_CONFIG.blockExplorer]
+            }]
+          });
+        } else {
+          throw new Error('Please switch to Somnia Testnet in your wallet');
+        }
+      }
+    }
+    return true;
+  }
+
+  /**
    * Execute token swap
    * @param {string} fromToken - Source token symbol
    * @param {string} toToken - Destination token symbol
@@ -317,6 +356,9 @@ class SwapServiceClass {
     if (!userAddress) {
       throw new Error('Please connect your wallet first');
     }
+
+    // Ensure MetaMask is on Somnia network
+    await this.checkNetwork();
 
     const signer = await this.getSigner();
     
