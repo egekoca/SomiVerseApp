@@ -962,6 +962,48 @@ export class Modal {
           availableLiquidityEl.textContent = '0 WSOMI';
         }
       }
+
+      // Load position data (user's supply position)
+      try {
+        const positionSupplyEl = this.bodyEl.querySelector('#position-supply');
+        const positionApyEl = this.bodyEl.querySelector('#position-apy');
+        const positionBalanceEl = this.bodyEl.querySelector('#position-balance');
+        
+        if (positionSupplyEl || positionApyEl || positionBalanceEl) {
+          // Get user's deposit balance (WSOMI equivalent)
+          const depositBalance = await GearboxService.getDepositBalance(tokenSymbol, this.walletAddress) || '0';
+          const depositBalanceNum = parseFloat(depositBalance);
+          
+          // Get user's Diesel balance (shares)
+          const dieselBalance = await GearboxService.getDieselBalance(tokenSymbol, this.walletAddress) || '0';
+          const dieselBalanceNum = parseFloat(dieselBalance);
+          
+          // Get APY
+          const positionAPY = await GearboxService.getPoolAPY(tokenSymbol) || 0;
+          
+          if (positionSupplyEl) {
+            positionSupplyEl.textContent = `${depositBalanceNum.toFixed(2)} WSOMI`;
+          }
+          
+          if (positionApyEl) {
+            positionApyEl.textContent = `${positionAPY.toFixed(2)}%`;
+          }
+          
+          if (positionBalanceEl) {
+            positionBalanceEl.textContent = `${dieselBalanceNum.toFixed(2)} dWSOMI-V3-1`;
+          }
+        }
+      } catch (e) {
+        console.error('Error loading position data:', e);
+        // Set defaults
+        const positionSupplyEl = this.bodyEl.querySelector('#position-supply');
+        const positionApyEl = this.bodyEl.querySelector('#position-apy');
+        const positionBalanceEl = this.bodyEl.querySelector('#position-balance');
+        
+        if (positionSupplyEl) positionSupplyEl.textContent = '0.00 WSOMI';
+        if (positionApyEl) positionApyEl.textContent = '0%';
+        if (positionBalanceEl) positionBalanceEl.textContent = '0.00 dWSOMI-V3-1';
+      }
     } catch (error) {
       console.error('Error loading lending data:', error);
     }
