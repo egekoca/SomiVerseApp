@@ -430,42 +430,6 @@ export function generateLendingContent(walletAddress = null) {
     </style>
 
     <div class="lending-container">
-      <div class="lending-status ${isConnected ? 'ready' : 'not-connected'}">
-        ${isConnected ? '● GEARBOX PROTOCOL READY' : '○ WALLET NOT CONNECTED'}
-      </div>
-
-      <!-- Your Positions Section -->
-      ${isConnected ? `
-      <div class="positions-section" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(var(--theme-rgb), 0.3); padding: 15px; border-radius: 4px; margin-bottom: 15px;">
-        <div class="pool-header" style="margin-bottom: 12px;">
-          <span>POSITIONS IN MARKETS</span>
-        </div>
-        <div class="position-row" style="display: flex; align-items: center; gap: 15px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 4px;">
-          <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
-            <div style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3);">
-              <img src="/somniablack.png" alt="SOMI" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-            </div>
-            <div>
-              <div style="font-weight: bold; color: #fff; font-size: 1em;">SOMI</div>
-              <div style="font-size: 0.75em; color: rgba(255,255,255,0.5);">Gearbox Pool</div>
-            </div>
-          </div>
-          <div style="flex: 1; text-align: right;">
-            <div style="font-size: 0.85em; color: rgba(255,255,255,0.7); margin-bottom: 4px;">Supply</div>
-            <div id="position-supply" style="font-weight: bold; color: #fff; font-size: 0.9em;">0.00 WSOMI</div>
-          </div>
-          <div style="flex: 1; text-align: right;">
-            <div style="font-size: 0.85em; color: rgba(255,255,255,0.7); margin-bottom: 4px;">Supply APY</div>
-            <div id="position-apy" style="font-weight: bold; color: var(--theme-color, #00ffcc); font-size: 0.9em;">0%</div>
-          </div>
-          <div style="flex: 1; text-align: right;">
-            <div style="font-size: 0.85em; color: rgba(255,255,255,0.7); margin-bottom: 4px;">Your Balance</div>
-            <div id="position-balance" style="font-weight: bold; color: #fff; font-size: 0.9em;">0.00 dWSOMI-V3-1</div>
-          </div>
-        </div>
-      </div>
-      ` : ''}
-
       <!-- Deposit/Withdraw Tabs -->
       <div class="lending-tabs" style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
         <button class="lending-tab active" data-tab="deposit" style="flex: 1; padding: 10px; background: transparent; border: none; border-bottom: 2px solid var(--theme-color, #00ffcc); color: var(--theme-color, #00ffcc); cursor: pointer; font-family: 'Courier New', monospace; font-size: 0.9em; text-transform: uppercase;">
@@ -495,19 +459,11 @@ export function generateLendingContent(walletAddress = null) {
             </div>
             <span style="font-weight: bold; color: #fff;">WSOMI</span>
           </div>
-          
-          <div style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; font-size: 0.85em; color: rgba(255,255,255,0.6); line-height: 1.6;">
-            Diesel (LP) Tokens automatically earn organic borrow rates proportional to your share of the Market. GEAR rewards need to be claimed separately.
-          </div>
 
           <div style="margin-top: 20px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9em;">
               <span style="color: rgba(255,255,255,0.7);">You get</span>
               <span id="you-get-amount" style="color: var(--theme-color, #00ffcc); font-weight: bold;">0.00 dWSOMI-V3-1</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9em;">
-              <span style="color: rgba(255,255,255,0.7);">WSOMI per dWSOMI-V3-1</span>
-              <span style="color: #fff;">1.000000</span>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.9em;">
               <span style="color: rgba(255,255,255,0.7);">Current APY</span>
@@ -549,10 +505,6 @@ export function generateLendingContent(walletAddress = null) {
               <span style="color: rgba(255,255,255,0.7);">You get</span>
               <span id="you-get-amount-withdraw" style="color: var(--theme-color, #00ffcc); font-weight: bold;">0.00 WSOMI</span>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9em;">
-              <span style="color: rgba(255,255,255,0.7);">dWSOMI-V3-1 per WSOMI</span>
-              <span style="color: #fff;">1.000000</span>
-            </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.9em;">
               <span style="color: rgba(255,255,255,0.7);">Available Liq.</span>
               <span id="available-liquidity" style="color: #fff;">--</span>
@@ -566,6 +518,45 @@ export function generateLendingContent(walletAddress = null) {
             <span class="btn-loader hidden">PROCESSING...</span>
           </button>
         </div>
+      </div>
+
+      <!-- Your Positions Section (below tabs) -->
+      ${isConnected ? `
+      <div class="positions-section" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(var(--theme-rgb), 0.3); padding: 15px; border-radius: 4px; margin-top: 20px;">
+        <div class="pool-header" style="margin-bottom: 12px;">
+          <span>POSITIONS IN MARKETS</span>
+        </div>
+        <div class="position-row" style="display: flex; align-items: center; gap: 15px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 4px;">
+          <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3);">
+              <img src="/somniablack.png" alt="SOMI" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+            </div>
+            <div>
+              <div style="font-weight: bold; color: #fff; font-size: 1em;">SOMI</div>
+              <div style="font-size: 0.75em; color: rgba(255,255,255,0.5);">Gearbox Pool</div>
+            </div>
+          </div>
+          <div style="flex: 1; text-align: right;">
+            <div style="font-size: 0.85em; color: rgba(255,255,255,0.7); margin-bottom: 4px;">Supply</div>
+            <div id="position-supply" style="font-weight: bold; color: #fff; font-size: 0.9em;">0.00 WSOMI</div>
+          </div>
+          <div style="flex: 1; text-align: right;">
+            <div style="font-size: 0.85em; color: rgba(255,255,255,0.7); margin-bottom: 4px;">Supply APY</div>
+            <div id="position-apy" style="font-weight: bold; color: var(--theme-color, #00ffcc); font-size: 0.9em;">0%</div>
+          </div>
+          <div style="flex: 1; text-align: right;">
+            <div style="font-size: 0.85em; color: rgba(255,255,255,0.7); margin-bottom: 4px;">Your Balance</div>
+            <div id="position-balance" style="font-weight: bold; color: #fff; font-size: 0.9em;">0.00 dWSOMI-V3-1</div>
+          </div>
+        </div>
+      </div>
+      ` : ''}
+
+      <!-- Powered by Gearbox -->
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+        <span style="font-size: 0.75em; color: rgba(255,255,255,0.5); font-family: 'Courier New', monospace;">POWERED BY</span>
+        <span style="font-size: 0.75em; color: rgba(255,255,255,0.7); font-family: 'Courier New', monospace;">GearBox Protocol</span>
+        <img src="/gearbox.avif" alt="Gearbox" style="height: 20px; width: auto; opacity: 0.8;">
       </div>
       
       <div class="faucet-message hidden"></div>

@@ -56,6 +56,7 @@ export class Modal {
     // Element references
     this.titleEl = this.modal.querySelector('#m-title');
     this.bodyEl = this.modal.querySelector('#m-body');
+    this.footerEl = this.modal.querySelector('.modal-footer');
 
     // Event listeners
     this.modal.querySelector('#modal-close').addEventListener('click', () => this.close());
@@ -150,6 +151,15 @@ export class Modal {
     // Initialize lending UI if needed
     if (type === 'LEND') {
       this.initLendingUI();
+      // Hide footer for lending modal
+      if (this.footerEl) {
+        this.footerEl.style.display = 'none';
+      }
+    } else {
+      // Show footer for other modals
+      if (this.footerEl) {
+        this.footerEl.style.display = '';
+      }
     }
 
     // Auto-focus on first interactive element

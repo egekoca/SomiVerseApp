@@ -854,7 +854,7 @@ body {
 
 /* === GAME MODAL (HUD SYSTEM) === */
 #game-modal {
-  width: 550px;
+  width: 650px;
   max-width: 90%;
   background: 
     linear-gradient(var(--bg-modal), rgba(0, 0, 0, 0.95)),
