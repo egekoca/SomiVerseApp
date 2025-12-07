@@ -88,9 +88,9 @@ export class InteractionSystem {
     const building = this.activeBuilding;
     
     // Generate content based on building type
+    // Both Faucet (CLAIM) and Swap (SWAP) need wallet address
     let content;
-    if (building.type === 'CLAIM') {
-      // Faucet needs wallet address for content generation
+    if (building.type === 'CLAIM' || building.type === 'SWAP') {
       content = building.contentGenerator(this.walletAddress);
     } else {
       content = building.contentGenerator();

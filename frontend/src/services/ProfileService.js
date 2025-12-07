@@ -113,7 +113,7 @@ class ProfileServiceClass {
    */
   async updateStats(walletAddress, statKey, increment = 1) {
     const stats = await this.request(`/profile/${walletAddress}/stats`, {
-      method: 'PATCH',
+      method: 'POST',
       body: JSON.stringify({ stat: statKey, increment })
     });
 

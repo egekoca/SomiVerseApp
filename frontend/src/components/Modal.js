@@ -3,6 +3,7 @@
  * HUD-style modal window system with action handlers
  */
 import { FaucetService } from '../services/FaucetService.js';
+import { SwapService } from '../services/SwapService.js';
 
 export class Modal {
   constructor() {
@@ -14,6 +15,7 @@ export class Modal {
     this.onClose = null;
     this.currentType = null;
     this.walletAddress = null;
+    this.currentFromBalance = 0; // For swap percent calculations
     
     this.create();
     this.setupWalletListener();
@@ -79,16 +81,16 @@ export class Modal {
         this.handleSwapPercent(e.target.textContent);
       }
 
-      // Swap Switch button
-      if (e.target.closest('.switch-btn')) {
-        this.handleSwapSwitch();
-      }
+      // Swap Switch button - handled in initSwapUI for SWAP type modals
     });
 
-    // Input listener for swap calculation
+    // Input listener for swap calculation (legacy - now handled in initSwapUI)
     this.bodyEl.addEventListener('input', (e) => {
       if (e.target.classList.contains('cyber-input') && e.target.closest('.from-box')) {
-        this.handleSwapInput(e.target.value);
+        // Only trigger if swap modal is open and handler exists
+        if (this.currentType === 'SWAP' && typeof this.handleSwapQuote === 'function') {
+          this.handleSwapQuote();
+        }
       }
     });
   }
@@ -97,16 +99,24 @@ export class Modal {
     // Listen for wallet connection
     window.addEventListener('walletConnected', (e) => {
       this.walletAddress = e.detail.account;
-      // Refresh content if faucet modal is open
-      if (this.isOpen && this.currentType === 'CLAIM') {
-        this.refreshFaucetContent();
+      // Refresh content if modal is open
+      if (this.isOpen) {
+        if (this.currentType === 'CLAIM') {
+          this.refreshFaucetContent();
+        } else if (this.currentType === 'SWAP') {
+          this.refreshSwapContent();
+        }
       }
     });
 
     window.addEventListener('walletDisconnected', () => {
       this.walletAddress = null;
-      if (this.isOpen && this.currentType === 'CLAIM') {
-        this.refreshFaucetContent();
+      if (this.isOpen) {
+        if (this.currentType === 'CLAIM') {
+          this.refreshFaucetContent();
+        } else if (this.currentType === 'SWAP') {
+          this.refreshSwapContent();
+        }
       }
     });
   }
@@ -124,9 +134,14 @@ export class Modal {
     this.overlay.classList.add('active');
     this.isOpen = true;
 
-    // Initialize faucet service if needed
+    // Initialize services based on type
     if (type === 'CLAIM') {
       FaucetService.init();
+    }
+
+    // Initialize swap UI if needed
+    if (type === 'SWAP') {
+      this.initSwapUI();
     }
 
     // Auto-focus on first interactive element
@@ -154,7 +169,7 @@ export class Modal {
         await this.handleFaucetClaim(button);
         break;
       case 'swap':
-        await this.simulateTransaction(button, 'SWAP COMPLETED: 1.5 ETH -> 4500 USDC', 50);
+        await this.handleSwapExecute(button);
         break;
       case 'lend':
         await this.simulateTransaction(button, 'DEPOSIT SUCCESSFUL: 1000 USDC', 75);
@@ -169,54 +184,269 @@ export class Modal {
 
   // --- SWAP HANDLERS ---
 
-  handleSwapPercent(percentStr) {
-    const fromInput = this.bodyEl.querySelector('.from-box .cyber-input');
-    // Extract balance (mock)
-    const balanceText = this.bodyEl.querySelector('.swap-balance').textContent;
-    const balance = parseFloat(balanceText.split(': ')[1]);
+  /**
+   * Initialize Swap UI event listeners
+   */
+  initSwapUI() {
+    SwapService.init();
+    
+    // Load balances if wallet connected
+    this.loadSwapBalances();
 
-    let amount = 0;
-    if (percentStr === 'MAX') {
-      amount = balance;
-    } else {
-      const percent = parseInt(percentStr) / 100;
-      amount = balance * percent;
+    // Amount input - get quote on change
+    const fromAmountInput = this.bodyEl.querySelector('#from-amount');
+    if (fromAmountInput) {
+      fromAmountInput.addEventListener('input', () => this.handleSwapQuote());
+      fromAmountInput.addEventListener('change', () => this.handleSwapQuote());
+    }
+
+    // Token selectors - get quote on change
+    const fromTokenSelect = this.bodyEl.querySelector('#from-token');
+    const toTokenSelect = this.bodyEl.querySelector('#to-token');
+    
+    if (fromTokenSelect) {
+      fromTokenSelect.addEventListener('change', () => {
+        this.loadSwapBalances();
+        this.handleSwapQuote();
+      });
+    }
+    
+    if (toTokenSelect) {
+      toTokenSelect.addEventListener('change', () => {
+        this.loadSwapBalances();
+        this.handleSwapQuote();
+      });
+    }
+
+    // Switch tokens button
+    const switchBtn = this.bodyEl.querySelector('#switch-tokens');
+    if (switchBtn) {
+      switchBtn.addEventListener('click', () => this.handleSwapSwitch());
+    }
+
+    // Percent buttons
+    const percentBtns = this.bodyEl.querySelectorAll('.percent-btn');
+    percentBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const percent = btn.dataset.percent;
+        this.handleSwapPercent(percent);
+      });
+    });
+  }
+
+  /**
+   * Load token balances for swap UI
+   */
+  async loadSwapBalances() {
+    if (!this.walletAddress) return;
+
+    const fromTokenSelect = this.bodyEl.querySelector('#from-token');
+    const toTokenSelect = this.bodyEl.querySelector('#to-token');
+    const fromBalanceEl = this.bodyEl.querySelector('#from-balance');
+    const toBalanceEl = this.bodyEl.querySelector('#to-balance');
+
+    if (!fromTokenSelect || !toTokenSelect) return;
+
+    const fromToken = fromTokenSelect.value;
+    const toToken = toTokenSelect.value;
+
+    try {
+      // Load from token balance
+      const fromBalance = await SwapService.getBalance(fromToken, this.walletAddress);
+      if (fromBalanceEl) {
+        fromBalanceEl.textContent = `Balance: ${parseFloat(fromBalance).toFixed(4)}`;
+      }
+      this.currentFromBalance = parseFloat(fromBalance);
+
+      // Load to token balance
+      const toBalance = await SwapService.getBalance(toToken, this.walletAddress);
+      if (toBalanceEl) {
+        toBalanceEl.textContent = `Balance: ${parseFloat(toBalance).toFixed(4)}`;
+      }
+    } catch (error) {
+      console.error('Error loading balances:', error);
+    }
+  }
+
+  /**
+   * Handle percent button click
+   */
+  handleSwapPercent(percentStr) {
+    const fromInput = this.bodyEl.querySelector('#from-amount');
+    if (!fromInput || !this.currentFromBalance) return;
+
+    const percent = percentStr === '100' ? 100 : parseInt(percentStr);
+    let amount = (this.currentFromBalance * percent) / 100;
+    
+    // Leave some for gas if using native token
+    const fromToken = this.bodyEl.querySelector('#from-token')?.value;
+    if (fromToken === 'STT' && percent === 100) {
+      amount = Math.max(0, amount - 0.01); // Reserve 0.01 STT for gas
     }
 
     fromInput.value = amount.toFixed(4);
-    this.handleSwapInput(amount);
+    this.handleSwapQuote();
   }
 
+  /**
+   * Handle token switch button
+   */
   handleSwapSwitch() {
-    const fromSymbolEl = this.bodyEl.querySelector('.from-box .token-name');
-    const toSymbolEl = this.bodyEl.querySelector('.to-box .token-name');
-    
-    const temp = fromSymbolEl.textContent;
-    fromSymbolEl.textContent = toSymbolEl.textContent;
-    toSymbolEl.textContent = temp;
+    const fromTokenSelect = this.bodyEl.querySelector('#from-token');
+    const toTokenSelect = this.bodyEl.querySelector('#to-token');
+    const fromAmountInput = this.bodyEl.querySelector('#from-amount');
+    const toAmountInput = this.bodyEl.querySelector('#to-amount');
 
-    // Trigger recalculation (mock rate inversion)
-    const fromInput = this.bodyEl.querySelector('.from-box .cyber-input');
-    this.handleSwapInput(fromInput.value);
+    if (!fromTokenSelect || !toTokenSelect) return;
+
+    // Swap token selections
+    const tempToken = fromTokenSelect.value;
+    fromTokenSelect.value = toTokenSelect.value;
+    toTokenSelect.value = tempToken;
+
+    // Swap amounts
+    if (fromAmountInput && toAmountInput) {
+      fromAmountInput.value = toAmountInput.value;
+      toAmountInput.value = '';
+    }
+
+    // Reload balances and quote
+    this.loadSwapBalances();
+    this.handleSwapQuote();
   }
 
-  handleSwapInput(value) {
-    const toInput = this.bodyEl.querySelector('.to-box .cyber-input');
-    const amount = parseFloat(value);
-    
-    if (isNaN(amount)) {
-      toInput.value = '';
+  /**
+   * Get and display swap quote
+   */
+  async handleSwapQuote() {
+    const fromToken = this.bodyEl.querySelector('#from-token')?.value;
+    const toToken = this.bodyEl.querySelector('#to-token')?.value;
+    const amount = this.bodyEl.querySelector('#from-amount')?.value;
+    const toAmountInput = this.bodyEl.querySelector('#to-amount');
+    const swapBtn = this.bodyEl.querySelector('#swap-btn');
+    const quoteInfo = this.bodyEl.querySelector('#quote-info');
+
+    // Validate input
+    if (!amount || parseFloat(amount) <= 0 || fromToken === toToken) {
+      if (toAmountInput) toAmountInput.value = '';
+      if (quoteInfo) quoteInfo.classList.add('hidden');
+      if (swapBtn && this.walletAddress) swapBtn.disabled = true;
       return;
     }
 
-    // Mock rate: 1 STT = 3.2 USDT
-    // Check current direction by symbol
-    const fromSymbol = this.bodyEl.querySelector('.from-box .token-name').textContent;
-    
-    let rate = 3.2;
-    if (fromSymbol !== 'STT') rate = 1 / 3.2; // Inverse if switched
+    try {
+      const quote = await SwapService.getSwapQuote(fromToken, toToken, amount);
 
-    toInput.value = (amount * rate).toFixed(4);
+      // Update output amount
+      if (toAmountInput) {
+        toAmountInput.value = quote.outputAmount;
+      }
+
+      // Update quote details
+      const rateEl = this.bodyEl.querySelector('#swap-rate');
+      const impactEl = this.bodyEl.querySelector('#price-impact');
+      const feeEl = this.bodyEl.querySelector('#swap-fee');
+
+      if (rateEl) {
+        let rateText = `1 ${fromToken} = ${quote.rate} ${toToken}`;
+        if (quote.estimated) {
+          rateText += ' <span class="estimated-badge">EST</span>';
+        }
+        rateEl.innerHTML = rateText;
+      }
+      if (impactEl) impactEl.textContent = quote.priceImpact;
+      if (feeEl) feeEl.textContent = `${quote.fee} ${fromToken}`;
+
+      // Show quote info
+      if (quoteInfo) quoteInfo.classList.remove('hidden');
+
+      // Enable swap button
+      if (swapBtn && this.walletAddress) {
+        swapBtn.disabled = false;
+        const btnText = swapBtn.querySelector('.btn-text');
+        if (btnText) btnText.textContent = 'SWAP TOKENS';
+      }
+
+    } catch (error) {
+      console.error('Quote error:', error);
+      if (toAmountInput) toAmountInput.value = '';
+      if (quoteInfo) quoteInfo.classList.add('hidden');
+      this.showMessage('Failed to get quote: ' + error.message, 'error');
+    }
+  }
+
+  /**
+   * Execute swap transaction
+   */
+  async handleSwapExecute(button) {
+    // Check wallet connection
+    if (!this.walletAddress) {
+      window.dispatchEvent(new CustomEvent('requestWalletConnect'));
+      this.showMessage('Please connect your wallet first.', 'warning');
+      return;
+    }
+
+    const fromToken = this.bodyEl.querySelector('#from-token')?.value;
+    const toToken = this.bodyEl.querySelector('#to-token')?.value;
+    const amount = this.bodyEl.querySelector('#from-amount')?.value;
+
+    // Validate
+    if (!amount || parseFloat(amount) <= 0) {
+      this.showMessage('Please enter a valid amount', 'error');
+      return;
+    }
+
+    if (fromToken === toToken) {
+      this.showMessage('Cannot swap same token', 'error');
+      return;
+    }
+
+    const btnText = button.querySelector('.btn-text');
+    const btnLoader = button.querySelector('.btn-loader');
+    const originalText = btnText ? btnText.textContent : '';
+
+    // Show loading state
+    if (btnText) btnText.classList.add('hidden');
+    if (btnLoader) btnLoader.classList.remove('hidden');
+    button.disabled = true;
+
+    try {
+      const result = await SwapService.swapTokens(fromToken, toToken, amount);
+
+      if (result.success) {
+        // Show XP Popup
+        this.showXPPopup('SWAP COMPLETED', 50);
+
+        // Show transaction link
+        if (result.txHash) {
+          this.showTxLink(result.txHash);
+        }
+
+        // Reload balances after successful swap
+        setTimeout(() => {
+          this.loadSwapBalances();
+          // Clear input
+          const fromAmountInput = this.bodyEl.querySelector('#from-amount');
+          const toAmountInput = this.bodyEl.querySelector('#to-amount');
+          if (fromAmountInput) fromAmountInput.value = '';
+          if (toAmountInput) toAmountInput.value = '';
+          const quoteInfo = this.bodyEl.querySelector('#quote-info');
+          if (quoteInfo) quoteInfo.classList.add('hidden');
+        }, 2000);
+      }
+
+    } catch (error) {
+      console.error('Swap error:', error);
+      this.showMessage(error.message, 'error');
+    } finally {
+      // Reset button state
+      if (btnText) {
+        btnText.classList.remove('hidden');
+        btnText.textContent = originalText;
+      }
+      if (btnLoader) btnLoader.classList.add('hidden');
+      button.disabled = false;
+    }
   }
 
   /**
@@ -425,6 +655,15 @@ export class Modal {
   async refreshFaucetContent() {
     const { generateFaucetContent } = await import('./ModalContent.js');
     this.bodyEl.innerHTML = generateFaucetContent(this.walletAddress);
+  }
+
+  /**
+   * Refresh swap modal content
+   */
+  async refreshSwapContent() {
+    const { generateSwapContent } = await import('./ModalContent.js');
+    this.bodyEl.innerHTML = generateSwapContent(this.walletAddress);
+    this.initSwapUI();
   }
 
   showMessage(text, type = 'info', xpAmount = 0) {

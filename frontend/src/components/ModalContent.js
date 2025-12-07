@@ -4,8 +4,30 @@
  */
 import { FaucetService } from '../services/FaucetService.js';
 import { ProfileService } from '../services/ProfileService.js';
+import { SwapService } from '../services/SwapService.js';
+import { SWAP_CONFIG } from '../config/swap.config.js';
 
-export function generateSwapContent() {
+/**
+ * Generate Swap UI content
+ * @param {string} walletAddress - Connected wallet address (optional)
+ */
+export function generateSwapContent(walletAddress = null) {
+  const tokens = SwapService.getSupportedTokens();
+  const settings = SwapService.getSettings();
+  
+  // Generate token options HTML
+  const tokenOptionsFrom = tokens.map(t => 
+    `<option value="${t.symbol}" ${t.symbol === 'STT' ? 'selected' : ''}>${t.symbol}</option>`
+  ).join('');
+  
+  const tokenOptionsTo = tokens.map(t => 
+    `<option value="${t.symbol}" ${t.symbol === 'USDT' ? 'selected' : ''}>${t.symbol}</option>`
+  ).join('');
+
+  const isConnected = !!walletAddress;
+  const buttonText = isConnected ? 'SWAP TOKENS' : 'CONNECT WALLET';
+  const buttonDisabled = isConnected ? '' : 'disabled';
+
   return `
     <style>
       .swap-container {
@@ -49,20 +71,29 @@ export function generateSwapContent() {
         font-family: 'Courier New', monospace;
         outline: none;
       }
-      .token-selector {
-        display: flex;
-        align-items: center;
-        gap: 5px;
+      .cyber-input::-webkit-outer-spin-button,
+      .cyber-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .token-select {
         background: rgba(255, 255, 255, 0.1);
-        padding: 4px 8px;
+        border: 1px solid rgba(var(--theme-rgb), 0.3);
+        color: var(--theme-color);
+        padding: 6px 10px;
         border-radius: 15px;
         cursor: pointer;
-        white-space: nowrap;
         font-weight: bold;
-        transition: all 0.2s;
+        font-family: 'Courier New', monospace;
+        outline: none;
+        min-width: 80px;
       }
-      .token-selector:hover {
+      .token-select:hover {
         background: rgba(255, 255, 255, 0.2);
+      }
+      .token-select option {
+        background: #1a1428;
+        color: #fff;
       }
       .percent-row {
         display: flex;
@@ -89,23 +120,25 @@ export function generateSwapContent() {
         justify-content: center;
         margin: -10px 0;
         z-index: 2;
+        position: relative;
       }
       .switch-btn {
-        background: #000;
-        border: 1px solid var(--theme-color);
+        background: #0d0a14;
+        border: 2px solid var(--theme-color);
         color: var(--theme-color);
-        width: 30px;
-        height: 30px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         transition: all 0.3s;
+        font-size: 1.2em;
       }
       .switch-btn:hover {
         background: var(--theme-color);
-        color: #000;
+        color: #0d0a14;
         transform: rotate(180deg);
       }
       .swap-details {
@@ -113,6 +146,9 @@ export function generateSwapContent() {
         padding: 10px;
         border-radius: 4px;
         font-size: 0.85em;
+      }
+      .swap-details.hidden {
+        display: none;
       }
       .detail-row {
         display: flex;
@@ -133,69 +169,102 @@ export function generateSwapContent() {
         font-size: 1.1em;
         margin-top: 10px;
       }
+      .swap-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .swap-status {
+        text-align: center;
+        padding: 8px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85em;
+      }
+      .swap-status.ready {
+        background: rgba(0, 255, 170, 0.1);
+        border: 1px solid rgba(0, 255, 170, 0.3);
+        color: #00ffaa;
+      }
+      .swap-status.not-connected {
+        background: rgba(255, 170, 0, 0.1);
+        border: 1px solid rgba(255, 170, 0, 0.3);
+        color: #ffaa00;
+      }
+      .text-green { color: #00ffaa; }
+      .text-neon { color: var(--theme-color); }
+      .estimated-badge {
+        font-size: 0.7em;
+        background: rgba(255, 170, 0, 0.2);
+        color: #ffaa00;
+        padding: 2px 6px;
+        border-radius: 3px;
+        margin-left: 5px;
+      }
     </style>
 
     <div class="swap-container">
+      <div class="swap-status ${isConnected ? 'ready' : 'not-connected'}">
+        ${isConnected ? '● READY TO SWAP' : '○ WALLET NOT CONNECTED'}
+      </div>
+
       <div class="swap-box from-box">
         <div class="swap-header">
           <span class="swap-label">FROM</span>
-          <span class="swap-balance">Balance: 12.5</span>
+          <span class="swap-balance" id="from-balance">Balance: --</span>
         </div>
         <div class="input-row">
-          <input type="number" class="cyber-input" placeholder="0.0" value="1">
-          <div class="token-selector">
-            <span class="token-icon">◈</span>
-            <span class="token-name">STT</span>
-            <span class="token-arrow">▼</span>
-          </div>
+          <input type="number" class="cyber-input" id="from-amount" placeholder="0.0" value="" step="0.01" min="0">
+          <select class="token-select" id="from-token">
+            ${tokenOptionsFrom}
+          </select>
         </div>
         <div class="percent-row">
-          <button class="percent-btn">25%</button>
-          <button class="percent-btn">50%</button>
-          <button class="percent-btn">75%</button>
-          <button class="percent-btn">MAX</button>
+          <button class="percent-btn" data-percent="25">25%</button>
+          <button class="percent-btn" data-percent="50">50%</button>
+          <button class="percent-btn" data-percent="75">75%</button>
+          <button class="percent-btn" data-percent="100">MAX</button>
         </div>
       </div>
 
       <div class="swap-divider">
-        <button class="switch-btn">⇅</button>
+        <button class="switch-btn" id="switch-tokens">⇅</button>
       </div>
 
       <div class="swap-box to-box">
         <div class="swap-header">
           <span class="swap-label">TO (ESTIMATED)</span>
+          <span class="swap-balance" id="to-balance">Balance: --</span>
         </div>
         <div class="input-row">
-          <input type="number" class="cyber-input" placeholder="0.0" value="3.2000" readonly>
-          <div class="token-selector">
-            <span class="token-icon">$</span>
-            <span class="token-name">USDT</span>
-            <span class="token-arrow">▼</span>
-          </div>
+          <input type="number" class="cyber-input" id="to-amount" placeholder="0.0" readonly>
+          <select class="token-select" id="to-token">
+            ${tokenOptionsTo}
+          </select>
         </div>
       </div>
 
-      <div class="swap-details">
+      <div class="swap-details hidden" id="quote-info">
         <div class="detail-row">
           <span>Rate</span>
-          <span>1 STT = 3.2000 USDT</span>
+          <span id="swap-rate">--</span>
         </div>
         <div class="detail-row">
           <span>Price Impact</span>
-          <span class="text-green">< 0.1%</span>
+          <span id="price-impact" class="text-green">--</span>
         </div>
         <div class="detail-row">
           <span>Fee</span>
-          <span>0.3%</span>
+          <span id="swap-fee">0.3%</span>
         </div>
         <div class="detail-row highlight">
-          <span>Points Reward</span>
-          <span class="text-neon">+150</span>
+          <span>XP Reward</span>
+          <span class="text-neon">+${settings.xpReward} XP</span>
         </div>
       </div>
 
-      <button class="primary-btn swap-btn" data-action="swap">
-        <span class="btn-text">SWAP TOKENS</span>
+      <button class="primary-btn swap-btn" id="swap-btn" data-action="swap" ${buttonDisabled}>
+        <span class="btn-text">${buttonText}</span>
         <span class="btn-loader hidden">PROCESSING...</span>
       </button>
       
