@@ -114,13 +114,26 @@ class SwapServiceClass {
         // ERC20 token balance
         const tokenAddress = this.getTokenAddress(tokenSymbol);
         if (!tokenAddress) return '0';
+        
+        // Skip if placeholder address
+        if (tokenAddress === '0x0000000000000000000000000000000000000000') {
+          return '0';
+        }
 
         const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        
+        // Check if contract exists by getting code
+        const code = await provider.getCode(tokenAddress);
+        if (code === '0x' || code === '0x0') {
+          // Contract doesn't exist at this address
+          return '0';
+        }
+        
         const balance = await tokenContract.balanceOf(userAddress);
         return ethers.formatUnits(balance, 18);
       }
     } catch (error) {
-      console.error(`Error getting ${tokenSymbol} balance:`, error);
+      // Silently return 0 for any balance errors
       return '0';
     }
   }
@@ -134,8 +147,21 @@ class SwapServiceClass {
     try {
       const provider = this.getProvider();
       
+      // Skip if either token is placeholder
+      if (tokenInAddress === '0x0000000000000000000000000000000000000000' ||
+          tokenOutAddress === '0x0000000000000000000000000000000000000000') {
+        return null;
+      }
+      
       // Get factory address from router dynamically
       const routerAddress = ethers.getAddress(SWAP_CONFIG.router);
+      
+      // Check if router contract exists
+      const routerCode = await provider.getCode(routerAddress);
+      if (routerCode === '0x' || routerCode === '0x0') {
+        return null;
+      }
+      
       const routerContract = new ethers.Contract(
         routerAddress,
         UNISWAP_ROUTER_ABI,
