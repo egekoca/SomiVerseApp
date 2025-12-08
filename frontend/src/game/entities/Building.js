@@ -101,6 +101,47 @@ export class Building {
         this.animItem.rotation.y += 0.02;
       }
     }
+    
+    // Animate billboard scrolling text (for domain building)
+    if (this.mesh.userData.billboardTexture && this.mesh.userData.billboardCanvas) {
+      const canvas = this.mesh.userData.billboardCanvas;
+      const ctx = canvas.getContext('2d', { alpha: true }); // Alpha channel for transparent background
+      
+      // Clear entire canvas - transparent background (frame provides the purple border)
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Text styling - white text with purple glow (set font first to measure text)
+      ctx.shadowColor = '#aa00ff';
+      ctx.shadowBlur = 25;
+      ctx.fillStyle = '#ffffff'; // White text
+      ctx.font = 'bold 100px Arial';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      
+      // Draw text multiple times for seamless continuous scrolling
+      const text = 'SOMNIA DOMAIN SERVICE';
+      
+      // Measure actual text width
+      const textMetrics = ctx.measureText(text);
+      const actualTextWidth = textMetrics.width;
+      const spacing = actualTextWidth + 300; // Space between text instances (300px gap)
+      
+      // Calculate scroll offset for continuous seamless scrolling
+      const scrollSpeed = 0.5; // pixels per frame
+      const time = Date.now();
+      const scrollOffset = (time * scrollSpeed) % spacing;
+      
+      // Draw text instances to cover entire canvas width with seamless loop
+      // Start from left edge and draw enough instances to cover entire width
+      const startX = -scrollOffset;
+      const endX = canvas.width + spacing;
+      
+      for (let x = startX; x < endX; x += spacing) {
+        ctx.fillText(text, x, canvas.height / 2);
+      }
+      
+      this.mesh.userData.billboardTexture.needsUpdate = true;
+    }
   }
 
   getDistanceTo(position) {

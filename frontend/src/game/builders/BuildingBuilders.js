@@ -232,81 +232,170 @@ export function buildLendingTower(group) {
 
 // ==================== SOMNIA DOMAIN SERVICE ====================
 export function buildDomainHub(group) {
-  // Base platform
-  const base = new THREE.Mesh(
-    new THREE.CylinderGeometry(18, 22, 8, 24),
-    new THREE.MeshLambertMaterial({ color: 0x1a1428, fog: false })
+  // Simple large building box (like background buildings but bigger)
+  const width = 25;
+  const depth = 25;
+  const height = 45;
+  
+  const building = new THREE.Mesh(
+    new THREE.BoxGeometry(width, height, depth),
+    new THREE.MeshLambertMaterial({ color: CONFIG.colors.buildingBase, fog: false })
   );
-  base.position.y = 4;
-  setAlwaysVisible(base);
-  group.add(base);
+  building.position.y = height / 2;
+  setAlwaysVisible(building);
+  group.add(building);
 
-  // Central pillar
-  const pillar = new THREE.Mesh(
-    new THREE.CylinderGeometry(8, 10, 32, 24),
-    new THREE.MeshLambertMaterial({ color: 0x231633, fog: false })
+  // Neon border on top (like background buildings)
+  const topLine = new THREE.Mesh(
+    new THREE.BoxGeometry(width, 0.3, 0.3),
+    new THREE.MeshBasicMaterial({ color: 0xaa00ff, transparent: true, opacity: 0.8, fog: false })
   );
-  pillar.position.y = 20;
-  setAlwaysVisible(pillar);
-  group.add(pillar);
+  topLine.position.set(0, height + 0.1, depth / 2);
+  setAlwaysVisible(topLine);
+  group.add(topLine);
 
-  // Neon rings (bright purple)
-  group.add(createNeonRing(22, 0.8, 0xaa00ff, 2));
-  group.add(createNeonRing(20, 0.8, 0xaa00ff, 10));
-  group.add(createNeonRing(18, 0.8, 0xaa00ff, 18));
-  group.add(createNeonRing(16, 0.8, 0xaa00ff, 26));
+  // Billboard frame - ONLY EDGES (no fill, just corners/borders)
+  const frameWidth = width * 0.85;
+  const frameHeight = height * 0.5;
+  const frameThickness = 0.15; // Thickness of the border lines
+  const frameDepth = 0.1;
+  
+  const frameMat = new THREE.MeshBasicMaterial({ color: 0xaa00ff, fog: false });
+  
+  // Helper function to create frame edges (only borders, no fill)
+  const createFrameEdges = (fw, fh, pos, rotY = 0) => {
+    const frameGroup = new THREE.Group();
+    frameGroup.position.copy(pos);
+    frameGroup.rotation.y = rotY;
+    
+    // Top edge
+    const topEdge = new THREE.Mesh(
+      new THREE.BoxGeometry(fw, frameThickness, frameDepth),
+      frameMat
+    );
+    topEdge.position.set(0, fh / 2, 0);
+    frameGroup.add(topEdge);
+    
+    // Bottom edge
+    const bottomEdge = new THREE.Mesh(
+      new THREE.BoxGeometry(fw, frameThickness, frameDepth),
+      frameMat
+    );
+    bottomEdge.position.set(0, -fh / 2, 0);
+    frameGroup.add(bottomEdge);
+    
+    // Left edge
+    const leftEdge = new THREE.Mesh(
+      new THREE.BoxGeometry(frameThickness, fh, frameDepth),
+      frameMat
+    );
+    leftEdge.position.set(-fw / 2, 0, 0);
+    frameGroup.add(leftEdge);
+    
+    // Right edge
+    const rightEdge = new THREE.Mesh(
+      new THREE.BoxGeometry(frameThickness, fh, frameDepth),
+      frameMat
+    );
+    rightEdge.position.set(fw / 2, 0, 0);
+    frameGroup.add(rightEdge);
+    
+    return frameGroup;
+  };
+  
+  // Front frame (only edges)
+  const frameFront = createFrameEdges(frameWidth, frameHeight, 
+    new THREE.Vector3(0, height * 0.55, depth / 2 + 0.15), 0);
+  setAlwaysVisible(frameFront);
+  group.add(frameFront);
+  
+  // Back frame (only edges)
+  const frameBack = createFrameEdges(frameWidth, frameHeight,
+    new THREE.Vector3(0, height * 0.55, -depth / 2 - 0.15), Math.PI);
+  setAlwaysVisible(frameBack);
+  group.add(frameBack);
+  
+  // Right side frame (only edges)
+  const frameRight = createFrameEdges(depth, frameHeight,
+    new THREE.Vector3(width / 2 + 0.15, height * 0.55, 0), Math.PI / 2);
+  setAlwaysVisible(frameRight);
+  group.add(frameRight);
 
-  // Floating halo disc (restored)
-  const halo = new THREE.Mesh(
-    new THREE.TorusGeometry(12, 0.8, 16, 64),
-    new THREE.MeshBasicMaterial({ color: 0xaa00ff, emissiveIntensity: 1, fog: false })
+  // Billboard screen (animated scrolling text) - transparent background, only text
+  const createBillboardTexture = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d', { alpha: true }); // Alpha channel for transparent background
+    
+    // No background fill - transparent, only text will be drawn
+    // Frame provides the purple border
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.premultiplyAlpha = false; // Don't premultiply alpha
+    texture.format = THREE.RGBAFormat; // Explicit format
+    return { texture, canvas }; // Return both
+  };
+  
+  const { texture: tex, canvas: billboardCanvas } = createBillboardTexture();
+  tex.minFilter = THREE.LinearFilter; // Better filtering to prevent aliasing
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = false; // Disable mipmaps for crisp text
+  tex.needsUpdate = true;
+  
+  // Front billboard - Transparent background, only text visible, inside frame
+  const billboardFront = new THREE.Mesh(
+    new THREE.PlaneGeometry(frameWidth, frameHeight),
+    new THREE.MeshBasicMaterial({
+      map: tex,
+      side: THREE.FrontSide,
+      transparent: true, // Transparent background, only text visible
+      toneMapped: false, // Keep colors bright
+      depthWrite: false // Don't write depth for transparent objects
+    })
   );
-  halo.position.y = 40;
-  halo.rotation.x = Math.PI / 2;
-  setAlwaysVisible(halo);
-  group.add(halo);
-
-  // Rotating logo (base.glb) that orbits
-  const logoContainer = new THREE.Group();
-  logoContainer.position.y = 48;
-  setAlwaysVisible(logoContainer);
-  group.add(logoContainer);
-
-  gltfLoader.load(
-    '/base.glb',
-    (gltf) => {
-      const model = gltf.scene;
-      model.scale.set(6, 6, 6);
-      model.traverse((child) => {
-        if (child.isMesh) {
-          child.material = new THREE.MeshBasicMaterial({ color: 0xaa00ff, fog: false });
-          child.frustumCulled = false;
-        }
-      });
-      logoContainer.add(model);
-      group.userData.animItem = logoContainer;
-    },
-    undefined,
-    () => {
-      // Fallback: magenta torus if glb fails
-      const fallback = new THREE.Mesh(
-        new THREE.TorusGeometry(4, 1.2, 16, 48),
-        new THREE.MeshBasicMaterial({ color: 0xaa00ff, fog: false })
-      );
-      fallback.rotation.x = Math.PI / 2;
-      logoContainer.add(fallback);
-      group.userData.animItem = logoContainer;
-    }
+  billboardFront.position.set(0, height * 0.55, depth / 2 + 0.2); // Inside frame (frame is at 0.15, billboard slightly forward)
+  billboardFront.renderOrder = 1; // Render after frame edges
+  setAlwaysVisible(billboardFront);
+  group.add(billboardFront);
+  
+  // Back billboard - Transparent background, only text visible, inside frame
+  const billboardBack = new THREE.Mesh(
+    new THREE.PlaneGeometry(frameWidth, frameHeight),
+    new THREE.MeshBasicMaterial({
+      map: tex,
+      side: THREE.FrontSide,
+      transparent: true, // Transparent background, only text visible
+      toneMapped: false, // Keep colors bright
+      depthWrite: false // Don't write depth for transparent objects
+    })
   );
-
-  // Animate halo + logo (same as lending building)
-  if (!group.userData.animItem) {
-    group.userData.animItem = logoContainer;
-  }
-
-  // Neon text
-  const neonText = createNeonText('DOMAIN', 0xaa00ff, 65);
-  group.add(neonText);
+  billboardBack.position.set(0, height * 0.55, -depth / 2 - 0.2); // Inside frame (frame is at -0.15, billboard slightly back)
+  billboardBack.rotation.y = Math.PI; // Face opposite direction
+  billboardBack.renderOrder = 1; // Render after frame edges
+  setAlwaysVisible(billboardBack);
+  group.add(billboardBack);
+  
+  // Right side billboard - Transparent background, only text visible, inside frame
+  const billboardRight = new THREE.Mesh(
+    new THREE.PlaneGeometry(depth, frameHeight),
+    new THREE.MeshBasicMaterial({
+      map: tex,
+      side: THREE.FrontSide,
+      transparent: true, // Transparent background, only text visible
+      toneMapped: false, // Keep colors bright
+      depthWrite: false // Don't write depth for transparent objects
+    })
+  );
+  billboardRight.position.set(width / 2 + 0.2, height * 0.55, 0); // Inside frame (frame is at 0.15, billboard slightly right)
+  billboardRight.rotation.y = Math.PI / 2; // Face right
+  billboardRight.renderOrder = 1; // Render after frame edges
+  setAlwaysVisible(billboardRight);
+  group.add(billboardRight);
+  
+  // Store texture and canvas for animation
+  group.userData.billboardTexture = tex;
+  group.userData.billboardCanvas = billboardCanvas; // Store canvas directly
 }
 
 // ==================== MINT LAB ====================
