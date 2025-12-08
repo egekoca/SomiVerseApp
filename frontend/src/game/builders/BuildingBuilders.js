@@ -284,7 +284,7 @@ export function buildDomainHub(group) {
         }
       });
       logoContainer.add(model);
-      group.userData.animItem = { halo, model: logoContainer, orbitRadius: 8, orbitSpeed: 0.0006, spinSpeed: 0.008 };
+      group.userData.animItem = logoContainer;
     },
     undefined,
     () => {
@@ -293,14 +293,16 @@ export function buildDomainHub(group) {
         new THREE.TorusGeometry(4, 1.2, 16, 48),
         new THREE.MeshBasicMaterial({ color: 0xaa00ff, fog: false })
       );
+      fallback.rotation.x = Math.PI / 2;
       logoContainer.add(fallback);
-      group.userData.animItem = { halo, model: logoContainer, orbitRadius: 8, orbitSpeed: 0.0006, spinSpeed: 0.008 };
+      group.userData.animItem = logoContainer;
     }
   );
 
-  // Animate halo + logo
-  group.userData.animItem = { halo, model: logoContainer, orbitRadius: 8, orbitSpeed: 0.0006, spinSpeed: 0.008 };
-  group.userData.animType = 'domain';
+  // Animate halo + logo (same as lending building)
+  if (!group.userData.animItem) {
+    group.userData.animItem = logoContainer;
+  }
 
   // Neon text
   const neonText = createNeonText('DOMAIN', 0xaa00ff, 65);

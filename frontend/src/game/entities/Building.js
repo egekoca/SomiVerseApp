@@ -97,15 +97,6 @@ export class Building {
     if (this.animItem) {
       if (this.animType === 'float') {
         this.animItem.position.y = 25 + Math.sin(Date.now() * 0.003) * 2;
-      } else if (this.animType === 'domain') {
-        const { halo, model, orbitRadius = 8, orbitSpeed = 0.0006, spinSpeed = 0.008 } = this.animItem;
-        if (halo) halo.rotation.z += 0.01;
-        if (model) {
-          model.rotation.y += spinSpeed;
-          const t = Date.now() * orbitSpeed;
-          model.position.x = Math.cos(t) * orbitRadius;
-          model.position.z = Math.sin(t) * orbitRadius;
-        }
       } else {
         this.animItem.rotation.y += 0.02;
       }
