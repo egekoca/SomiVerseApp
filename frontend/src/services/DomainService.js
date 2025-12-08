@@ -14,26 +14,20 @@ export class DomainService {
 
   /**
    * Initialize domain service
+   * Always uses Mainnet RPC since domains are on Mainnet
    */
   async init() {
     try {
-      SwapService.init();
-      const provider = SwapService.getProvider();
-      if (!provider) {
-        throw new Error('No provider available');
-      }
-
-      const network = await provider.getNetwork();
-      const isMainnet = network.chainId === BigInt(DOMAIN_CONFIG.mainnet.chainId);
+      // Domain service always uses Mainnet (chainId 5031)
+      const mainnetRpcUrl = 'https://api.infra.mainnet.somnia.network';
+      this.provider = new ethers.JsonRpcProvider(mainnetRpcUrl);
       
-      this.registryAddress = isMainnet 
-        ? DOMAIN_CONFIG.mainnet.registry 
-        : DOMAIN_CONFIG.testnet.registry;
+      this.registryAddress = DOMAIN_CONFIG.mainnet.registry;
 
       this.registryContract = new ethers.Contract(
         this.registryAddress,
         DOMAIN_REGISTRY_ABI,
-        provider
+        this.provider
       );
 
       return true;
@@ -413,8 +407,10 @@ export class DomainService {
       }
 
       // Get current block number
-      const provider = await SwapService.getProvider();
-      const currentBlock = await provider.getBlockNumber();
+      if (!this.provider) {
+        await this.init();
+      }
+      const currentBlock = await this.provider.getBlockNumber();
       
       // Query in smaller chunks to avoid "block range exceeds" error
       // Try last 500 blocks first, then expand if needed
@@ -625,49 +621,53 @@ export class DomainService {
         await this.init();
       }
 
-      // Try getDomainsOf as fallback
-      // Use browser provider (MetaMask) instead of RPC provider for contract calls
+      // Try getDomainsOf with mainnet RPC provider (most reliable)
       try {
-        const browserProvider = SwapService.getBrowserProvider();
-        if (browserProvider) {
-          // Create contract instance with browser provider
-          const contractWithBrowser = new ethers.Contract(
-            this.registryAddress,
-            DOMAIN_REGISTRY_ABI,
-            browserProvider
-          );
-          
-          const domains = await contractWithBrowser.getDomainsOf(address);
-          if (domains && domains.length > 0) {
-            // Filter out empty strings and remove .somi extension
-            const filtered = domains.filter(d => d && d.length > 0).map(d => {
-              // Remove .somi if present (contract returns with .somi)
-              return d.replace(/\.somi$/i, '');
-            });
-            console.log('Filtered domains (without .somi):', filtered);
-            if (filtered.length > 0) {
-              this.saveDomainsToStorage(address, filtered);
-              return filtered;
-            }
+        if (!this.registryContract) {
+          await this.init();
+        }
+        
+        const domains = await this.registryContract.getDomainsOf(address);
+        console.log('getDomainsOf result (mainnet RPC):', domains);
+        if (domains && domains.length > 0) {
+          // Filter out empty strings and remove .somi extension
+          const filtered = domains.filter(d => d && d.length > 0).map(d => {
+            // Remove .somi if present (contract returns with .somi)
+            return d.replace(/\.somi$/i, '');
+          });
+          console.log('Filtered domains (without .somi):', filtered);
+          if (filtered.length > 0) {
+            this.saveDomainsToStorage(address, filtered);
+            return filtered;
           }
         }
-        } catch (error) {
-          // Silently fail, try RPC provider
-          // Try with RPC provider as last resort
-          try {
-            const domains = await this.registryContract.getDomainsOf(address);
+      } catch (error) {
+        console.warn('getDomainsOf failed, trying browser provider:', error.message);
+        
+        // Fallback: Try with browser provider (MetaMask)
+        try {
+          const browserProvider = SwapService.getBrowserProvider();
+          if (browserProvider) {
+            const contractWithBrowser = new ethers.Contract(
+              this.registryAddress,
+              DOMAIN_REGISTRY_ABI,
+              browserProvider
+            );
+            
+            const domains = await contractWithBrowser.getDomainsOf(address);
             if (domains && domains.length > 0) {
-            const filtered = domains.filter(d => d && d.length > 0).map(d => {
-              return d.replace(/\.somi$/i, '');
-            });
-            if (filtered.length > 0) {
-              this.saveDomainsToStorage(address, filtered);
-              return filtered;
+              const filtered = domains.filter(d => d && d.length > 0).map(d => {
+                return d.replace(/\.somi$/i, '');
+              });
+              if (filtered.length > 0) {
+                this.saveDomainsToStorage(address, filtered);
+                return filtered;
+              }
             }
           }
-          } catch (rpcError) {
-            // Silently fail, try events
-          }
+        } catch (browserError) {
+          console.warn('Browser provider also failed:', browserError.message);
+        }
       }
 
       // Try events as last resort
@@ -794,40 +794,44 @@ export class DomainService {
 
       const key = `primary_${address.toLowerCase()}`;
 
-      // Try getPrimary as fallback
-      // Use browser provider (MetaMask) instead of RPC provider for contract calls
+      // Try getPrimary with mainnet RPC provider (most reliable)
       try {
-        const browserProvider = SwapService.getBrowserProvider();
-        if (browserProvider) {
-          // Create contract instance with browser provider
-          const contractWithBrowser = new ethers.Contract(
-            this.registryAddress,
-            DOMAIN_REGISTRY_ABI,
-            browserProvider
-          );
-          
-          const primary = await contractWithBrowser.getPrimary(address);
-          if (primary && primary.length > 0) {
-            // Remove .somi if present
-            const cleanPrimary = primary.replace(/\.somi$/i, '');
-            localStorage.setItem(key, cleanPrimary);
-            return cleanPrimary;
-          }
+        if (!this.registryContract) {
+          await this.init();
         }
-        } catch (error) {
-          // Silently fail, try RPC provider
-          // Try with RPC provider as last resort
-          try {
-            const primary = await this.registryContract.getPrimary(address);
+        
+        const primary = await this.registryContract.getPrimary(address);
+        console.log('getPrimary result (mainnet RPC):', primary);
+        if (primary && primary.length > 0) {
+          // Remove .somi if present
+          const cleanPrimary = primary.replace(/\.somi$/i, '');
+          localStorage.setItem(key, cleanPrimary);
+          return cleanPrimary;
+        }
+      } catch (error) {
+        console.warn('getPrimary failed, trying browser provider:', error.message);
+        
+        // Fallback: Try with browser provider (MetaMask)
+        try {
+          const browserProvider = SwapService.getBrowserProvider();
+          if (browserProvider) {
+            const contractWithBrowser = new ethers.Contract(
+              this.registryAddress,
+              DOMAIN_REGISTRY_ABI,
+              browserProvider
+            );
+            
+            const primary = await contractWithBrowser.getPrimary(address);
             if (primary && primary.length > 0) {
-            const cleanPrimary = primary.replace(/\.somi$/i, '');
-            localStorage.setItem(key, cleanPrimary);
-            return cleanPrimary;
+              const cleanPrimary = primary.replace(/\.somi$/i, '');
+              localStorage.setItem(key, cleanPrimary);
+              return cleanPrimary;
+            }
           }
-          } catch (rpcError) {
-            // Silently fail, try mapping
-          }
+        } catch (browserError) {
+          console.warn('Browser provider also failed:', browserError.message);
         }
+      }
 
       // Try primaryName mapping
       try {
@@ -863,33 +867,10 @@ export class DomainService {
       // Remove .somi if present and convert to lowercase
       const cleanName = domainName.replace(/\.somi$/i, '').toLowerCase();
       
-      // Try with browser provider first
-      try {
-        const browserProvider = SwapService.getBrowserProvider();
-        if (browserProvider) {
-          const contractWithBrowser = new ethers.Contract(
-            this.registryAddress,
-            DOMAIN_REGISTRY_ABI,
-            browserProvider
-          );
-          
-          const domainInfo = await contractWithBrowser.domains(cleanName);
-          console.log('Domain info for', cleanName, ' (browser provider):', domainInfo);
-          
-          if (domainInfo && domainInfo.length >= 2) {
-            // domainInfo is a tuple: [owner, expiry]
-            const expiry = domainInfo[1];
-            return Number(expiry);
-          }
-        }
-      } catch (browserError) {
-        console.warn('getExpiry failed with browser provider:', browserError.message);
-      }
-      
-      // Fallback to RPC provider
+      // Try with mainnet RPC provider first (most reliable)
       try {
         const domainInfo = await this.registryContract.domains(cleanName);
-        console.log('Domain info for', cleanName, ' (RPC provider):', domainInfo);
+        console.log('Domain info for', cleanName, ' (mainnet RPC):', domainInfo);
         
         if (domainInfo && domainInfo.length >= 2) {
           // domainInfo is a tuple: [owner, expiry]
@@ -897,7 +878,27 @@ export class DomainService {
           return Number(expiry);
         }
       } catch (rpcError) {
-        console.warn('getExpiry failed with RPC provider:', rpcError.message);
+        console.warn('getExpiry failed with mainnet RPC, trying browser provider:', rpcError.message);
+        
+        // Fallback to browser provider
+        try {
+          const browserProvider = SwapService.getBrowserProvider();
+          if (browserProvider) {
+            const contractWithBrowser = new ethers.Contract(
+              this.registryAddress,
+              DOMAIN_REGISTRY_ABI,
+              browserProvider
+            );
+            
+            const domainInfo = await contractWithBrowser.domains(cleanName);
+            if (domainInfo && domainInfo.length >= 2) {
+              const expiry = domainInfo[1];
+              return Number(expiry);
+            }
+          }
+        } catch (browserError) {
+          console.warn('getExpiry failed with browser provider:', browserError.message);
+        }
       }
       
       // If both fail, return 0 (unknown expiry)
