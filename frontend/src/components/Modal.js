@@ -166,17 +166,40 @@ export class Modal {
       setTimeout(async () => await this.initDomainUI(), 100);
     }
 
-    // Hide footer for lending/swap/faucet/domain modals
-    if (type === 'LEND' || type === 'SWAP' || type === 'CLAIM' || type === 'DOMAIN') {
+    // Hide footer for lending/swap/faucet modals, but show custom footer for domain
+    if (type === 'LEND' || type === 'SWAP' || type === 'CLAIM') {
       if (this.footerEl) this.footerEl.style.display = 'none';
+    } else if (type === 'DOMAIN') {
+      // Show footer for domain modal with custom content
+      if (this.footerEl) {
+        this.footerEl.style.display = 'flex';
+        this.footerEl.style.justifyContent = 'center';
+        this.footerEl.innerHTML = `
+          <a 
+            href="https://www.somnia.domains/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: rgba(255,255,255,0.7); font-family: 'Courier New', monospace; font-size: 0.85em; transition: all 0.3s;"
+            onmouseover="this.style.color='var(--theme-color, #aa00ff)'"
+            onmouseout="this.style.color='rgba(255,255,255,0.7)'"
+          >
+            <img src="/somniablack.png" alt="Somnia" style="width: 20px; height: 20px; border-radius: 50%;" />
+            <span>Powered by Somnia Domain Service</span>
+          </a>
+        `;
+      }
     } else if (this.footerEl) {
       this.footerEl.style.display = '';
+      this.footerEl.innerHTML = `
+        <span>/// SYSTEM READY</span>
+        <span>V.2.1.0</span>
+      `;
     }
 
-    // Hide subtitle/system status for faucet modal
+    // Hide subtitle/system status for faucet and domain modals
     const subtitleEl = this.modal.querySelector('.modal-subtitle');
     const systemStatusEl = this.modal.querySelector('.system-status');
-    if (type === 'CLAIM') {
+    if (type === 'CLAIM' || type === 'DOMAIN') {
       if (subtitleEl) subtitleEl.style.display = 'none';
       if (systemStatusEl) systemStatusEl.style.display = 'none';
     } else {
@@ -197,6 +220,16 @@ export class Modal {
     this.overlay.classList.remove('active');
     this.isOpen = false;
     this.currentType = null;
+    
+    // Reset footer to default
+    if (this.footerEl) {
+      this.footerEl.style.justifyContent = 'space-between';
+      this.footerEl.innerHTML = `
+        <span>/// SYSTEM READY</span>
+        <span>V.2.1.0</span>
+      `;
+    }
+    
     if (this.onClose) this.onClose();
   }
 
@@ -1622,11 +1655,6 @@ export class Modal {
 
       // Render domains
       domainList.innerHTML = domainData.map(domain => {
-        const expiryDate = domain.expiry && domain.expiry > 0 ? new Date(domain.expiry * 1000) : null;
-        const expiryStr = expiryDate 
-          ? `${expiryDate.getMonth() + 1}/${expiryDate.getDate()}/${expiryDate.getFullYear()}`
-          : 'Unknown';
-
         return `
           <div class="domain-item">
             <div class="domain-item-header">
@@ -1634,9 +1662,6 @@ export class Modal {
                 <span class="domain-name ${domain.isPrimary ? 'primary' : ''}">${domain.name}.somi</span>
                 ${domain.isPrimary ? '<span class="domain-primary-badge">★ Primary</span>' : ''}
               </div>
-            </div>
-            <div class="domain-expiry">
-              Expires: ${expiryStr}
             </div>
             <div class="domain-actions-row">
               <button 
@@ -1647,13 +1672,6 @@ export class Modal {
               >
                 ${domain.isPrimary ? '★' : '☆'} Set Primary
               </button>
-              <button 
-                class="domain-action-btn renew" 
-                data-action="domain-renew" 
-                data-domain="${domain.name}"
-              >
-                Renew
-              </button>
             </div>
           </div>
         `;
@@ -1662,9 +1680,6 @@ export class Modal {
       // Re-attach event listeners
       this.bodyEl.querySelectorAll('[data-action="domain-set-primary"]').forEach(btn => {
         btn.addEventListener('click', () => this.handleDomainSetPrimary(btn));
-      });
-      this.bodyEl.querySelectorAll('[data-action="domain-renew"]').forEach(btn => {
-        btn.addEventListener('click', () => this.handleDomainRenew(btn));
       });
     } catch (error) {
       console.error('Load domains error:', error);

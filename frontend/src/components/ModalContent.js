@@ -722,7 +722,7 @@ export async function generateDomainContent(walletAddress = null) {
         display: flex;
         align-items: center;
         gap: 10px;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(40, 40, 40, 0.8);
         border: 1px solid rgba(var(--theme-rgb), 0.5);
         padding: 10px;
         border-radius: 4px;
