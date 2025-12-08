@@ -20,6 +20,10 @@ export class LevelUpPopup {
     
     const colorClass = newLevel >= 5 ? 'levelup-orange' : 'levelup-blue';
 
+    // Ensure visible before binding events
+    this.element.style.display = 'flex';
+    this.element.style.pointerEvents = 'all';
+
     this.element.innerHTML = `
       <div class="levelup-content ${colorClass}">
         <div class="levelup-title">LEVEL UP!</div>
@@ -36,7 +40,11 @@ export class LevelUpPopup {
     // Bind close button
     const closeBtn = this.element.querySelector('.levelup-close');
     if (closeBtn) {
-      closeBtn.addEventListener('click', () => this.hide());
+      closeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.hide();
+      });
     }
 
     // Show with animation
@@ -44,14 +52,20 @@ export class LevelUpPopup {
       this.element.classList.add('show');
     }, 10);
 
-    // Auto-hide after 5 seconds
+    // Auto-hide after 1.5 seconds
     setTimeout(() => {
       this.hide();
-    }, 5000);
+    }, 1500);
   }
 
   hide() {
     this.element.classList.remove('show');
+    this.element.style.pointerEvents = 'none';
+    // Fully hide after transition
+    setTimeout(() => {
+      this.element.style.display = 'none';
+      this.element.innerHTML = '';
+    }, 300);
   }
 }
 
