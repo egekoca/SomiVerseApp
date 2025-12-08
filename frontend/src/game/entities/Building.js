@@ -64,8 +64,10 @@ export class Building {
     light.position.y = 20;
     this.mesh.add(light);
 
-    // Tabela
-    this.createSign();
+    // Tabela - Skip for DOMAIN type (no sign needed)
+    if (this.type !== 'DOMAIN') {
+      this.createSign();
+    }
   }
 
   createSign() {

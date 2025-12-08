@@ -245,14 +245,44 @@ export function buildDomainHub(group) {
   setAlwaysVisible(building);
   group.add(building);
 
-  // Neon border on top (like background buildings)
-  const topLine = new THREE.Mesh(
+  // Neon border on top - All 4 sides
+  // Front face
+  const topLineFront = new THREE.Mesh(
     new THREE.BoxGeometry(width, 0.3, 0.3),
     new THREE.MeshBasicMaterial({ color: 0xaa00ff, transparent: true, opacity: 0.8, fog: false })
   );
-  topLine.position.set(0, height + 0.1, depth / 2);
-  setAlwaysVisible(topLine);
-  group.add(topLine);
+  topLineFront.position.set(0, height + 0.1, depth / 2);
+  setAlwaysVisible(topLineFront);
+  group.add(topLineFront);
+  
+  // Back face
+  const topLineBack = new THREE.Mesh(
+    new THREE.BoxGeometry(width, 0.3, 0.3),
+    new THREE.MeshBasicMaterial({ color: 0xaa00ff, transparent: true, opacity: 0.8, fog: false })
+  );
+  topLineBack.position.set(0, height + 0.1, -depth / 2);
+  setAlwaysVisible(topLineBack);
+  group.add(topLineBack);
+  
+  // Right side
+  const topLineRight = new THREE.Mesh(
+    new THREE.BoxGeometry(depth, 0.3, 0.3),
+    new THREE.MeshBasicMaterial({ color: 0xaa00ff, transparent: true, opacity: 0.8, fog: false })
+  );
+  topLineRight.position.set(width / 2, height + 0.1, 0);
+  topLineRight.rotation.y = Math.PI / 2;
+  setAlwaysVisible(topLineRight);
+  group.add(topLineRight);
+  
+  // Left side
+  const topLineLeft = new THREE.Mesh(
+    new THREE.BoxGeometry(depth, 0.3, 0.3),
+    new THREE.MeshBasicMaterial({ color: 0xaa00ff, transparent: true, opacity: 0.8, fog: false })
+  );
+  topLineLeft.position.set(-width / 2, height + 0.1, 0);
+  topLineLeft.rotation.y = Math.PI / 2;
+  setAlwaysVisible(topLineLeft);
+  group.add(topLineLeft);
 
   // Billboard frame - ONLY EDGES (no fill, just corners/borders)
   const frameWidth = width * 0.85;
@@ -303,19 +333,13 @@ export function buildDomainHub(group) {
     return frameGroup;
   };
   
-  // Front frame (only edges)
+  // Front frame (only edges) - with billboard
   const frameFront = createFrameEdges(frameWidth, frameHeight, 
     new THREE.Vector3(0, height * 0.55, depth / 2 + 0.15), 0);
   setAlwaysVisible(frameFront);
   group.add(frameFront);
   
-  // Back frame (only edges)
-  const frameBack = createFrameEdges(frameWidth, frameHeight,
-    new THREE.Vector3(0, height * 0.55, -depth / 2 - 0.15), Math.PI);
-  setAlwaysVisible(frameBack);
-  group.add(frameBack);
-  
-  // Right side frame (only edges)
+  // Right side frame (only edges) - with billboard
   const frameRight = createFrameEdges(depth, frameHeight,
     new THREE.Vector3(width / 2 + 0.15, height * 0.55, 0), Math.PI / 2);
   setAlwaysVisible(frameRight);
@@ -358,23 +382,6 @@ export function buildDomainHub(group) {
   billboardFront.renderOrder = 1; // Render after frame edges
   setAlwaysVisible(billboardFront);
   group.add(billboardFront);
-  
-  // Back billboard - Transparent background, only text visible, inside frame
-  const billboardBack = new THREE.Mesh(
-    new THREE.PlaneGeometry(frameWidth, frameHeight),
-    new THREE.MeshBasicMaterial({
-      map: tex,
-      side: THREE.FrontSide,
-      transparent: true, // Transparent background, only text visible
-      toneMapped: false, // Keep colors bright
-      depthWrite: false // Don't write depth for transparent objects
-    })
-  );
-  billboardBack.position.set(0, height * 0.55, -depth / 2 - 0.2); // Inside frame (frame is at -0.15, billboard slightly back)
-  billboardBack.rotation.y = Math.PI; // Face opposite direction
-  billboardBack.renderOrder = 1; // Render after frame edges
-  setAlwaysVisible(billboardBack);
-  group.add(billboardBack);
   
   // Right side billboard - Transparent background, only text visible, inside frame
   const billboardRight = new THREE.Mesh(
