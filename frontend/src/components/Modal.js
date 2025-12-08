@@ -208,6 +208,10 @@ export class Modal {
       case 'withdraw':
         await this.handleLendingWithdraw(button);
         break;
+      case 'domain-connect':
+        // Trigger wallet connect (integration placeholder for Somnia Domain Service)
+        window.dispatchEvent(new CustomEvent('requestWalletConnect'));
+        break;
       case 'lend':
         // Legacy support
         await this.handleLendingDeposit(button);

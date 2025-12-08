@@ -3,6 +3,7 @@
  * Content generator functions for each building type
  */
 import { FaucetService } from '../services/FaucetService.js';
+import { SomniaNameService } from '../services/SomniaNameService.js';
 import { ProfileService } from '../services/ProfileService.js';
 import { SwapService } from '../services/SwapService.js';
 import { GearboxService } from '../services/GearboxService.js';
@@ -664,9 +665,36 @@ export function generateFaucetContent(walletAddress = null) {
   `;
 }
 
+/**
+ * Somnia Domain Service content
+ */
+export function generateDomainContent(walletAddress = null) {
+  const isConnected = !!walletAddress;
+  return `
+    <div class="domain-container">
+      <div class="domain-header">
+        <div class="domain-title">Somnia Domain Service</div>
+        <div class="domain-subtitle">Claim your .somi identity</div>
+      </div>
+      <div class="domain-body">
+        <div class="domain-description">
+          Reserve a unique .somi name linked to your wallet. Connect to check availability and register.
+        </div>
+        <div class="domain-actions">
+          <button class="primary-btn domain-btn" data-action="domain-connect">
+            ${isConnected ? 'CHECK & REGISTER' : 'CONNECT WALLET'}
+          </button>
+          <div class="domain-note">Integration placeholder — connects to Somnia Domain Service.</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 export default {
   generateSwapContent,
   generateLendingContent,
   generateMintContent,
-  generateFaucetContent
+  generateFaucetContent,
+  generateDomainContent
 };

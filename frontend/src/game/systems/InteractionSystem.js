@@ -79,7 +79,7 @@ export class InteractionSystem {
     // Show and position button
     this.actionButton.show();
     this.actionButton.updatePosition(x, y);
-    this.actionButton.setText('CONNECT: ' + building.title);
+    this.actionButton.setText(building.title);
   }
 
   async interact() {

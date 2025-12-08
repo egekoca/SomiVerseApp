@@ -230,6 +230,83 @@ export function buildLendingTower(group) {
   group.add(neonText);
 }
 
+// ==================== SOMNIA DOMAIN SERVICE ====================
+export function buildDomainHub(group) {
+  // Base platform
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(18, 22, 8, 24),
+    new THREE.MeshLambertMaterial({ color: 0x1a1428, fog: false })
+  );
+  base.position.y = 4;
+  setAlwaysVisible(base);
+  group.add(base);
+
+  // Central pillar
+  const pillar = new THREE.Mesh(
+    new THREE.CylinderGeometry(8, 10, 32, 24),
+    new THREE.MeshLambertMaterial({ color: 0x231633, fog: false })
+  );
+  pillar.position.y = 20;
+  setAlwaysVisible(pillar);
+  group.add(pillar);
+
+  // Neon rings (bright purple)
+  group.add(createNeonRing(22, 0.8, 0xaa00ff, 2));
+  group.add(createNeonRing(20, 0.8, 0xaa00ff, 10));
+  group.add(createNeonRing(18, 0.8, 0xaa00ff, 18));
+  group.add(createNeonRing(16, 0.8, 0xaa00ff, 26));
+
+  // Floating halo disc (restored)
+  const halo = new THREE.Mesh(
+    new THREE.TorusGeometry(12, 0.8, 16, 64),
+    new THREE.MeshBasicMaterial({ color: 0xaa00ff, emissiveIntensity: 1, fog: false })
+  );
+  halo.position.y = 40;
+  halo.rotation.x = Math.PI / 2;
+  setAlwaysVisible(halo);
+  group.add(halo);
+
+  // Rotating logo (base.glb) that orbits
+  const logoContainer = new THREE.Group();
+  logoContainer.position.y = 48;
+  setAlwaysVisible(logoContainer);
+  group.add(logoContainer);
+
+  gltfLoader.load(
+    '/base.glb',
+    (gltf) => {
+      const model = gltf.scene;
+      model.scale.set(6, 6, 6);
+      model.traverse((child) => {
+        if (child.isMesh) {
+          child.material = new THREE.MeshBasicMaterial({ color: 0xaa00ff, fog: false });
+          child.frustumCulled = false;
+        }
+      });
+      logoContainer.add(model);
+      group.userData.animItem = { halo, model: logoContainer, orbitRadius: 8, orbitSpeed: 0.0006, spinSpeed: 0.008 };
+    },
+    undefined,
+    () => {
+      // Fallback: magenta torus if glb fails
+      const fallback = new THREE.Mesh(
+        new THREE.TorusGeometry(4, 1.2, 16, 48),
+        new THREE.MeshBasicMaterial({ color: 0xaa00ff, fog: false })
+      );
+      logoContainer.add(fallback);
+      group.userData.animItem = { halo, model: logoContainer, orbitRadius: 8, orbitSpeed: 0.0006, spinSpeed: 0.008 };
+    }
+  );
+
+  // Animate halo + logo
+  group.userData.animItem = { halo, model: logoContainer, orbitRadius: 8, orbitSpeed: 0.0006, spinSpeed: 0.008 };
+  group.userData.animType = 'domain';
+
+  // Neon text
+  const neonText = createNeonText('DOMAIN', 0xaa00ff, 65);
+  group.add(neonText);
+}
+
 // ==================== MINT LAB ====================
 export function buildMintLab(group) {
   // Dome - DARK GREEN (not black)

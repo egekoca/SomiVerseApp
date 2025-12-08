@@ -2395,3 +2395,51 @@ button#header-connect.hidden {
   box-shadow: 0 0 25px rgba(255, 153, 0, 0.6);
 }
 
+
+
+/* Somnia Domain Service */
+.domain-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.domain-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.domain-title {
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: #aa00ff;
+  text-shadow: 0 0 10px rgba(170, 0, 255, 0.7);
+}
+.domain-subtitle {
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.7);
+}
+.domain-body {
+  background: rgba(170, 0, 255, 0.06);
+  border: 1px solid rgba(170, 0, 255, 0.2);
+  border-radius: 8px;
+  padding: 14px;
+}
+.domain-description {
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+.domain-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.domain-btn {
+  width: 100%;
+}
+.domain-note {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+

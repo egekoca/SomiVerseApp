@@ -27,7 +27,8 @@ import {
   buildSwapCity,
   buildLendingTower,
   buildMintLab,
-  buildGoldFaucet
+  buildGoldFaucet,
+  buildDomainHub
 } from './builders/BuildingBuilders.js';
 
 // Content
@@ -35,7 +36,8 @@ import {
   generateSwapContent,
   generateLendingContent,
   generateMintContent,
-  generateFaucetContent
+  generateFaucetContent,
+  generateDomainContent
 } from '../components/ModalContent.js';
 
 // Config
@@ -261,6 +263,8 @@ export class Game {
   createInteractiveBuildings() {
     const scene = this.sceneManager.getScene();
     const dist = CONFIG.city.buildingDistance;
+    const domainX = -dist * 3; // further left of faucet lane
+    const domainZ = dist;
 
     // Add Main Building Colliders (Box 30x30)
     // These are slightly larger than meshes to prevent walking into base rings
@@ -269,7 +273,8 @@ export class Game {
       { x: dist, z: -dist, w: mainColliderSize, d: mainColliderSize }, // Swap
       { x: -dist, z: -dist, w: mainColliderSize, d: mainColliderSize }, // Lend
       { x: dist, z: dist, w: mainColliderSize, d: mainColliderSize }, // Mint
-      { x: -dist, z: dist, w: mainColliderSize, d: mainColliderSize } // Faucet
+      { x: -dist, z: dist, w: mainColliderSize, d: mainColliderSize }, // Faucet
+      { x: domainX, z: domainZ, w: mainColliderSize, d: mainColliderSize } // Domain
     );
 
     // SWAP CITY
@@ -327,6 +332,20 @@ export class Game {
     });
     scene.add(faucetBuilding.getMesh());
     this.buildings.push(faucetBuilding);
+
+    // SOMNIA DOMAIN SERVICE (center hub)
+    const domainBuilding = new Building({
+      x: domainX,
+      z: domainZ,
+      color: CONFIG.colors.neonPurple,
+      title: 'SOMNIA DOMAIN SERVICE',
+      subtitle: 'GET YOUR .SOMI',
+      type: 'DOMAIN',
+      builderFn: buildDomainHub,
+      contentGenerator: generateDomainContent
+    });
+    scene.add(domainBuilding.getMesh());
+    this.buildings.push(domainBuilding);
   }
 
   createPlayer() {

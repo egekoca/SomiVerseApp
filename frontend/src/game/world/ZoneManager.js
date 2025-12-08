@@ -37,6 +37,8 @@ export class ZoneManager {
     this.addZone(-dist, -dist, hubSize, hubSize);  // Sol üst - LEND
     this.addZone(dist, dist, hubSize, hubSize);    // Sağ alt - MINT
     this.addZone(-dist, dist, hubSize, hubSize);   // Sol alt - CLAIM
+    // Somnia Domain Service - west of faucet (shifted further left)
+    this.addZone(-dist * 2.5, dist, hubSize, hubSize);
 
     // -- BILLBOARD ALANLARI --
     // 3 büyük reklam panosu
