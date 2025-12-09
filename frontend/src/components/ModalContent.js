@@ -7,6 +7,7 @@ import { SomniaNameService } from '../services/SomniaNameService.js';
 import { ProfileService } from '../services/ProfileService.js';
 import { SwapService } from '../services/SwapService.js';
 import { GearboxService } from '../services/GearboxService.js';
+import { BridgeService } from '../services/BridgeService.js';
 import { SWAP_CONFIG } from '../config/swap.config.js';
 import { GEARBOX_CONFIG } from '../config/gearbox.config.js';
 
@@ -1014,10 +1015,27 @@ export async function generateDomainContent(walletAddress = null) {
 /**
  * Generate Bridge content (simple UI for bridging to Somnia Mainnet SOMI)
  */
-export function generateBridgeContent(walletAddress = null) {
+export async function generateBridgeContent(walletAddress = null) {
   const isConnected = !!walletAddress;
   const buttonText = isConnected ? 'Enter an amount' : 'Connect Wallet';
   const buttonDisabled = isConnected ? 'disabled' : '';
+
+  // Load initial balances if wallet is connected
+  let sellBalance = '0.00';
+  let buyBalance = '0.00';
+  let sellToken = 'ETH';
+  let sellNetwork = 'Base';
+
+  if (isConnected) {
+    try {
+      await BridgeService.init();
+      // Default: Base ETH
+      sellBalance = await BridgeService.getBaseETHBalance();
+      buyBalance = await BridgeService.getSOMIBalance();
+    } catch (error) {
+      console.error('Error loading initial bridge balances:', error);
+    }
+  }
 
   return `
     <style>
@@ -1182,7 +1200,7 @@ export function generateBridgeContent(walletAddress = null) {
         <div class="bridge-amount">
           <div class="bridge-amount-top">
             <div class="bridge-amount-value">0</div>
-            <div class="bridge-balance">Balance: 0.00</div>
+            <div class="bridge-balance">Balance: ${parseFloat(sellBalance || '0').toFixed(4)} ${sellToken}</div>
           </div>
           <div class="bridge-percent">
             <button>20%</button>
@@ -1210,12 +1228,12 @@ export function generateBridgeContent(walletAddress = null) {
         <div class="bridge-amount">
           <div class="bridge-amount-top">
             <div class="bridge-amount-value">0</div>
-            <div class="bridge-balance">Balance: 0.00</div>
+            <div class="bridge-balance">Balance: ${parseFloat(buyBalance || '0').toFixed(4)} SOMI</div>
           </div>
         </div>
       </div>
 
-      <button class="primary-btn bridge-btn" ${buttonDisabled}>
+      <button class="primary-btn bridge-btn" ${buttonDisabled} data-action="bridge">
         <span class="btn-text">${buttonText}</span>
       </button>
       <div class="bridge-footer">Bridge assets to Somnia Mainnet (SOMI)</div>

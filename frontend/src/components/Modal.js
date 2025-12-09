@@ -6,6 +6,7 @@ import { FaucetService } from '../services/FaucetService.js';
 import { SwapService } from '../services/SwapService.js';
 import { GearboxService } from '../services/GearboxService.js';
 import { domainService } from '../services/DomainService.js';
+import { BridgeService } from '../services/BridgeService.js';
 
 export class Modal {
   constructor() {
@@ -209,7 +210,10 @@ export class Modal {
 
     // Bridge UI init
     if (type === 'BRIDGE') {
-      setTimeout(() => this.initBridgeUI(), 50);
+      setTimeout(() => {
+        this.initBridgeUI();
+        this.loadBridgeBalances();
+      }, 50);
     }
 
     // Auto-focus on first interactive element
@@ -475,6 +479,8 @@ export class Modal {
       if (chainEl) chainEl.textContent = label || network;
       sellBtn.style.setProperty('--token-icon', `url('${tokenIcon}')`);
       sellBtn.style.setProperty('--chain-icon', `url('${chainIcon}')`);
+      sellBtn.dataset.token = token;
+      sellBtn.dataset.network = network;
     };
 
     const openOverlay = () => overlay.classList.add('active');
@@ -524,11 +530,20 @@ export class Modal {
         const label = network === 'ethereum' ? 'Ethereum' : network.charAt(0).toUpperCase() + network.slice(1);
         setSelection(token, network, tokenIcon, chainIcon, label);
         closeOverlay();
+        // Reload balance after token selection
+        setTimeout(() => this.loadBridgeBalances(), 100);
       });
     });
 
-    // default view: show all
+    // default view: show all and preselect Ethereum / ETH (bridge supports Ethereum→Somnia)
     filterTokens('all');
+    setSelection(
+      'ETH',
+      'ethereum',
+      'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
+      'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png',
+      'Ethereum'
+    );
   }
 
   close() {
@@ -583,6 +598,9 @@ export class Modal {
       case 'domain-connect':
         // Trigger wallet connect
         window.dispatchEvent(new CustomEvent('requestWalletConnect'));
+        break;
+      case 'bridge':
+        await this.handleBridgeExecute(button);
         break;
       case 'lend':
         // Legacy support
@@ -2142,6 +2160,136 @@ export class Modal {
       const content = await generateDomainContent(this.walletAddress);
       this.bodyEl.innerHTML = content;
       await this.initDomainUI();
+    }
+  }
+
+  // --- BRIDGE HANDLERS ---
+
+  /**
+   * Handle bridge execution
+   */
+  async handleBridgeExecute(button) {
+    if (!this.walletAddress) {
+      window.dispatchEvent(new CustomEvent('requestWalletConnect'));
+      return;
+    }
+
+    // Get amount from input
+    const amountInput = this.bodyEl.querySelector('.bridge-amount-value');
+    if (!amountInput) return;
+
+    const amount = parseFloat(amountInput.textContent);
+    if (!amount || amount <= 0) {
+      this.showMessage('Please enter a valid amount', 'error');
+      return;
+    }
+
+    // Get selected token and network
+    const sellBtn = this.bodyEl.querySelector('.bridge-token-btn[data-token-role="sell"]');
+    const token = sellBtn?.querySelector('[data-token-symbol]')?.textContent || 'ETH';
+    const network = sellBtn?.querySelector('[data-token-chain]')?.textContent || 'Ethereum';
+
+    // Only support Ethereum -> Somnia for now
+    if (network !== 'Ethereum' || token !== 'ETH') {
+      this.showMessage('Only ETH from Ethereum Mainnet is supported for bridging to Somnia', 'error');
+      return;
+    }
+
+    button.disabled = true;
+    const originalText = button.textContent;
+    button.textContent = 'Bridging...';
+
+    try {
+      await BridgeService.init();
+      const result = await BridgeService.bridgeETHToSOMI(amount.toString(), this.walletAddress);
+
+      if (result.success) {
+        this.showXPPopup('BRIDGE SUCCESS', 100);
+        this.showMessage(result.message, 'success');
+        
+        // Refresh balances
+        setTimeout(() => {
+          this.loadBridgeBalances();
+        }, 2000);
+      } else {
+        this.showMessage(result.message, 'error');
+      }
+    } catch (error) {
+      console.error('Bridge execution error:', error);
+      this.showMessage(error.message || 'Bridge transaction failed', 'error');
+    } finally {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+
+  /**
+   * Load bridge balances
+   */
+  async loadBridgeBalances() {
+    if (!this.walletAddress || this.currentType !== 'BRIDGE') return;
+
+    try {
+      await BridgeService.init();
+      
+      const sellBtn = this.bodyEl.querySelector('.bridge-token-btn[data-token-role="sell"]');
+      if (!sellBtn) return;
+      
+      // Get token and network from dataset or text content
+      const token = sellBtn.dataset.token || sellBtn.querySelector('[data-token-symbol]')?.textContent?.trim() || 'ETH';
+      const networkText = sellBtn.querySelector('[data-token-chain]')?.textContent?.trim() || 'Base';
+      const network = networkText.toLowerCase() === 'ethereum' ? 'ethereum' : 
+                      networkText.toLowerCase() === 'base' ? 'base' : 'base';
+
+      console.log('Loading bridge balances:', { token, network, networkText });
+
+      let sellBalanceValue = '0';
+      let sellSymbol = token;
+
+      // Get balance based on network and token
+      if (network === 'base') {
+        if (token === 'ETH') {
+          sellBalanceValue = await BridgeService.getBaseETHBalance();
+          console.log('Base ETH balance:', sellBalanceValue);
+        } else if (token === 'USDC') {
+          sellBalanceValue = await BridgeService.getBaseUSDCBalance();
+          console.log('Base USDC balance:', sellBalanceValue);
+        }
+      } else if (network === 'ethereum') {
+        if (token === 'ETH') {
+          sellBalanceValue = await BridgeService.getEthereumETHBalance();
+          console.log('Ethereum ETH balance:', sellBalanceValue);
+        } else if (token === 'USDC') {
+          sellBalanceValue = await BridgeService.getEthereumUSDCBalance();
+          console.log('Ethereum USDC balance:', sellBalanceValue);
+        }
+      }
+
+      // Get SOMI balance on Somnia Mainnet
+      const somiBalance = await BridgeService.getSOMIBalance();
+      console.log('Somnia SOMI balance:', somiBalance);
+
+      // Update sell balance
+      const sellBalance = this.bodyEl.querySelector('.bridge-card:first-child .bridge-balance');
+      if (sellBalance) {
+        const formattedBalance = parseFloat(sellBalanceValue || '0').toFixed(4);
+        sellBalance.textContent = `Balance: ${formattedBalance} ${sellSymbol}`;
+      }
+
+      // Update buy balance (SOMI on Somnia Mainnet)
+      const buyBalance = this.bodyEl.querySelector('.bridge-card:last-child .bridge-balance');
+      if (buyBalance) {
+        const formattedSOMI = parseFloat(somiBalance || '0').toFixed(4);
+        buyBalance.textContent = `Balance: ${formattedSOMI} SOMI`;
+      }
+
+      // Update amount input if needed
+      const amountValue = this.bodyEl.querySelector('.bridge-amount-value');
+      if (amountValue && amountValue.textContent === '0') {
+        // Keep it at 0, user will enter amount
+      }
+    } catch (error) {
+      console.error('Load bridge balances error:', error);
     }
   }
 
