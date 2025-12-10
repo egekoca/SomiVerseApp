@@ -644,11 +644,22 @@ export class Modal {
     // Load balances if wallet connected
     this.loadSwapBalances();
 
-    // Amount input - get quote on change
+    // Amount input - get quote on change (debounced to prevent excessive API calls)
     const fromAmountInput = this.bodyEl.querySelector('#from-amount');
     if (fromAmountInput) {
-      fromAmountInput.addEventListener('input', () => this.handleSwapQuote());
-      fromAmountInput.addEventListener('change', () => this.handleSwapQuote());
+      let quoteTimeout = null;
+      fromAmountInput.addEventListener('input', () => {
+        // Clear previous timeout
+        if (quoteTimeout) clearTimeout(quoteTimeout);
+        // Debounce: wait 500ms after user stops typing
+        quoteTimeout = setTimeout(() => {
+          this.handleSwapQuote();
+        }, 500);
+      });
+      fromAmountInput.addEventListener('change', () => {
+        if (quoteTimeout) clearTimeout(quoteTimeout);
+        this.handleSwapQuote();
+      });
     }
 
     // Switch tokens button
