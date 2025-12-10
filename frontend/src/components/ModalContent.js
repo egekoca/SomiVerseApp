@@ -1039,8 +1039,8 @@ export async function generateDomainContent(walletAddress = null) {
  */
 export async function generateBridgeContent(walletAddress = null) {
   const isConnected = !!walletAddress;
-  const buttonText = isConnected ? 'BRIDGE' : 'CONNECT WALLET';
-  const buttonDisabled = isConnected ? '' : 'disabled';
+  const buttonText = 'SOON';
+  const buttonDisabled = 'disabled';
 
   // Load initial balances if wallet is connected
   let sellBalance = '0.00';

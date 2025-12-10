@@ -2654,19 +2654,12 @@ export class Modal {
    * Update bridge button state based on input value
    */
   updateBridgeButtonState(amountInput, bridgeButton) {
-    const amount = parseFloat(amountInput.value) || 0;
     const btnText = bridgeButton.querySelector('.btn-text');
     
-    if (amount > 0) {
-      bridgeButton.disabled = false;
-      if (btnText) {
-        btnText.textContent = 'BRIDGE';
-      }
-    } else {
-      bridgeButton.disabled = true;
-      if (btnText) {
-        btnText.textContent = 'ENTER AN AMOUNT';
-      }
+    // Bridge functionality is not ready yet - always show SOON and keep disabled
+    bridgeButton.disabled = true;
+    if (btnText) {
+      btnText.textContent = 'SOON';
     }
   }
 
