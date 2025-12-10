@@ -235,6 +235,21 @@ export class Modal {
    * Init bridge UI (token selector panel)
    */
   initBridgeUI() {
+    // Update bridge button state based on input value
+    const amountInput = this.bodyEl.querySelector('.bridge-amount-value');
+    const bridgeButton = this.bodyEl.querySelector('.bridge-btn');
+    
+    if (amountInput && bridgeButton) {
+      // Initial state
+      this.updateBridgeButtonState(amountInput, bridgeButton);
+      
+      // Listen for input changes
+      amountInput.addEventListener('input', () => {
+        this.updateBridgeButtonState(amountInput, bridgeButton);
+      });
+    }
+    
+    // Existing bridge percent button handlers
     const sellBtn = this.bodyEl.querySelector('.bridge-token-btn[data-token-role="sell"]');
     let overlay = document.getElementById('bridge-selector-overlay');
     let closeBtn = document.getElementById('bridge-selector-close');
@@ -2172,6 +2187,26 @@ export class Modal {
   // --- BRIDGE HANDLERS ---
 
   /**
+   * Update bridge button state based on input value
+   */
+  updateBridgeButtonState(amountInput, bridgeButton) {
+    const amount = parseFloat(amountInput.value) || 0;
+    const btnText = bridgeButton.querySelector('.btn-text');
+    
+    if (amount > 0) {
+      bridgeButton.disabled = false;
+      if (btnText) {
+        btnText.textContent = 'BRIDGE';
+      }
+    } else {
+      bridgeButton.disabled = true;
+      if (btnText) {
+        btnText.textContent = 'ENTER AN AMOUNT';
+      }
+    }
+  }
+
+  /**
    * Handle bridge execution
    */
   async handleBridgeExecute(button) {
@@ -2184,7 +2219,7 @@ export class Modal {
     const amountInput = this.bodyEl.querySelector('.bridge-amount-value');
     if (!amountInput) return;
 
-    const amount = parseFloat(amountInput.textContent);
+    const amount = parseFloat(amountInput.value);
     if (!amount || amount <= 0) {
       this.showMessage('Please enter a valid amount', 'error');
       return;
@@ -2253,16 +2288,26 @@ export class Modal {
       // Calculate amount based on percent
       const amount = (currentBalance * percent) / 100;
       
-      // Update amount value display
-      const amountValue = this.bodyEl.querySelector('.bridge-card:first-child .bridge-amount-value');
-      if (amountValue) {
+      // Update amount value input
+      const amountInput = this.bodyEl.querySelector('.bridge-card:first-child .bridge-amount-value');
+      const bridgeButton = this.bodyEl.querySelector('.bridge-btn');
+      
+      if (amountInput) {
         // Format based on token decimals (ETH/USDC typically 4-6 decimals for display)
         const formattedAmount = amount < 0.0001 
           ? amount.toFixed(8) 
           : amount < 1 
           ? amount.toFixed(6) 
           : amount.toFixed(4);
-        amountValue.textContent = formattedAmount;
+        amountInput.value = formattedAmount;
+        
+        // Update bridge button state
+        if (bridgeButton) {
+          this.updateBridgeButtonState(amountInput, bridgeButton);
+        }
+        
+        // Trigger input event for any listeners
+        amountInput.dispatchEvent(new Event('input', { bubbles: true }));
       }
 
       // Update button text if needed (optional visual feedback)
@@ -2337,7 +2382,7 @@ export class Modal {
 
       // Update amount input if needed
       const amountValue = this.bodyEl.querySelector('.bridge-amount-value');
-      if (amountValue && amountValue.textContent === '0') {
+      if (amountValue && amountValue.value === '0') {
         // Keep it at 0, user will enter amount
       }
     } catch (error) {

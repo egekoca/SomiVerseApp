@@ -3,7 +3,8 @@
  * Manages user profiles, XP, and NFTs via Backend API
  */
 
-const API_URL = 'http://localhost:4000/api';
+// API URL from environment variable (for production) or localhost (for development)
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 class ProfileServiceClass {
   constructor() {

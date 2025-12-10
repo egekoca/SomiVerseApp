@@ -4,7 +4,10 @@
  * Uses backend proxy to avoid CORS issues
  */
 
-const API_URL = 'http://localhost:4000/api/profile/domain';
+// API URL from environment variable (for production) or localhost (for development)
+const API_URL = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL}/profile/domain`
+  : 'http://localhost:4000/api/profile/domain';
 
 class SomniaNameServiceClass {
   constructor() {

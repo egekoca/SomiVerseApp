@@ -1017,8 +1017,8 @@ export async function generateDomainContent(walletAddress = null) {
  */
 export async function generateBridgeContent(walletAddress = null) {
   const isConnected = !!walletAddress;
-  const buttonText = isConnected ? 'Enter an amount' : 'Connect Wallet';
-  const buttonDisabled = isConnected ? 'disabled' : '';
+  const buttonText = isConnected ? 'BRIDGE' : 'CONNECT WALLET';
+  const buttonDisabled = isConnected ? '' : 'disabled';
 
   // Load initial balances if wallet is connected
   let sellBalance = '0.00';
@@ -1075,6 +1075,20 @@ export async function generateBridgeContent(walletAddress = null) {
         font-size: 2.2em;
         font-weight: 700;
         color: #fff;
+        background: transparent;
+        border: none;
+        outline: none;
+        width: 100%;
+        font-family: 'Courier New', monospace;
+        text-align: left;
+      }
+      .bridge-amount-value::-webkit-outer-spin-button,
+      .bridge-amount-value::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .bridge-amount-value[type="number"] {
+        -moz-appearance: textfield;
       }
       .bridge-balance {
         font-size: 0.9em;
@@ -1207,7 +1221,7 @@ export async function generateBridgeContent(walletAddress = null) {
         </div>
         <div class="bridge-amount">
           <div class="bridge-amount-top">
-            <div class="bridge-amount-value">0</div>
+            <input type="number" class="bridge-amount-value" id="bridge-amount-input" value="0" step="any" min="0" placeholder="0" />
             <div class="bridge-balance">Balance: ${parseFloat(sellBalance || '0').toFixed(4)} ${sellToken}</div>
           </div>
           <div class="bridge-percent">
