@@ -19,7 +19,7 @@ export async function generateSwapContent(walletAddress = null) {
   const tokens = await SwapService.getSupportedTokens();
   const settings = SwapService.getSettings();
   
-  // Default tokens (SOMI -> WSOMI for mainnet, STT -> USDT for testnet)
+  // Default tokens (mainnet)
   const defaultFrom = 'SOMI';
   const defaultTo = 'WSOMI';
   
@@ -250,7 +250,7 @@ export async function generateSwapContent(walletAddress = null) {
             <div class="swap-token-icon"><div class="badge"></div></div>
             <div style="display:flex;flex-direction:column;gap:2px;">
               <span data-token-symbol>${defaultFrom}</span>
-              <small class="swap-token-chain" data-token-network>${fromTokenInfo.network === 'mainnet' ? 'Mainnet' : 'Testnet'}</small>
+              ${fromTokenInfo.network === 'testnet' ? `<small class="swap-token-chain" data-token-network>Testnet</small>` : ''}
             </div>
           </div>
         </div>
@@ -282,7 +282,7 @@ export async function generateSwapContent(walletAddress = null) {
             <div class="swap-token-icon" style="filter: ${toIsTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none'};"><div class="badge" style="filter: ${toIsTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none'};"></div></div>
             <div style="display:flex;flex-direction:column;gap:2px;">
               <span data-token-symbol>${defaultTo}</span>
-              <small class="swap-token-chain" data-token-network>${toTokenInfo.network === 'mainnet' ? 'Mainnet' : 'Testnet'}</small>
+              ${toTokenInfo.network === 'testnet' ? `<small class="swap-token-chain" data-token-network>Testnet</small>` : ''}
             </div>
           </div>
         </div>

@@ -691,13 +691,15 @@ export class Modal {
     let overlay = document.getElementById('swap-selector-overlay');
     let closeBtn;
     
+    // Token listesi - hem mainnet hem testnet
+    const tokens = [
+      { symbol: 'SOMI', network: 'mainnet', logo: '/somniablack.png', chainLogo: '/somniablack.png', name: 'Somnia Token' },
+      { symbol: 'WSOMI', network: 'mainnet', logo: '/somniablack.png', chainLogo: '/somniablack.png', name: 'Wrapped Somnia Token' },
+      { symbol: 'STT', network: 'testnet', logo: '/somniablack.png', chainLogo: '/somniablack.png', name: 'Somnia Token', icon: 'S' },
+      { symbol: 'USDT', network: 'testnet', logo: '/somniablack.png', chainLogo: '/somniablack.png', name: 'Tether USD', icon: 'U' }
+    ];
+    
     if (!overlay) {
-      const tokens = [
-        { symbol: 'SOMI', network: 'mainnet', logo: '/somniablack.png', chainLogo: '/somniablack.png', name: 'Somnia Token' },
-        { symbol: 'WSOMI', network: 'mainnet', logo: '/somniablack.png', chainLogo: '/somniablack.png', name: 'Wrapped Somnia Token' },
-        { symbol: 'STT', network: 'testnet', logo: '/somniablack.png', chainLogo: '/somniablack.png', name: 'Somnia Token', icon: 'S' },
-        { symbol: 'USDT', network: 'testnet', logo: '/somniablack.png', chainLogo: '/somniablack.png', name: 'Tether USD', icon: 'U' }
-      ];
       
       const tokenItems = tokens.map(token => {
         const isTestnet = token.network === 'testnet';
@@ -716,7 +718,7 @@ export class Modal {
               </div>
               <div>
                 <div class="swap-token-name">${token.symbol}</div>
-                <div class="swap-token-chain">${token.network === 'mainnet' ? 'Mainnet' : 'Testnet'}</div>
+                ${token.network === 'testnet' ? `<div class="swap-token-chain">Testnet</div>` : ''}
               </div>
             </div>
           </div>
@@ -738,14 +740,14 @@ export class Modal {
           .swap-selector-overlay.active { display: flex; }
           .swap-selector {
             width: 90%;
-            max-width: 960px;
+            max-width: 600px;
             max-height: 80vh;
             background: #050508;
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 18px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.75);
-            display: grid;
-            grid-template-columns: 240px 1fr;
+            display: flex;
+            flex-direction: column;
             position: relative;
             overflow: hidden;
             color: #f6f1ff;
@@ -763,18 +765,32 @@ export class Modal {
             border-radius: 10px;
             cursor: pointer;
           }
-          .swap-selector .panel-left {
-            background: #0c0a12;
-            border-right: 1px solid rgba(255,255,255,0.08);
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-          }
-          .swap-selector .panel-right {
+          .swap-selector .panel-content {
             padding: 16px;
             overflow-y: auto;
             background: #0a0810;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+          }
+          .swap-search-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: #f6f1ff;
+            font-size: 14px;
+            font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+            outline: none;
+            transition: all 0.2s ease;
+          }
+          .swap-search-input:focus {
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.08);
+          }
+          .swap-search-input::placeholder {
+            color: rgba(255,255,255,0.4);
           }
           .swap-select-title {
             font-size: 15px;
@@ -858,23 +874,9 @@ export class Modal {
         <div class="swap-selector-overlay" id="swap-selector-overlay">
           <div class="swap-selector">
             <button class="swap-close-btn" id="swap-selector-close">×</button>
-            <div class="panel-left">
-              <div class="swap-select-title">Networks</div>
-              <div class="swap-network-item active" data-network="all">
-                <div class="swap-network-icon" style="--chain-icon:url('/somniablack.png');"></div>
-                <span>All Networks</span>
-              </div>
-              <div class="swap-network-item" data-network="mainnet">
-                <div class="swap-network-icon" style="--chain-icon:url('/somniablack.png');"></div>
-                <span>Mainnet</span>
-              </div>
-              <div class="swap-network-item" data-network="testnet">
-                <div class="swap-network-icon" style="--chain-icon:url('/somniablack.png'); filter: grayscale(0.7) brightness(0.8);"></div>
-                <span>Testnet</span>
-              </div>
-            </div>
-            <div class="panel-right">
-              <div class="swap-select-title">Tokens</div>
+            <div class="panel-content">
+              <div class="swap-select-title">Select Token</div>
+              <input type="text" class="swap-search-input" id="swap-token-search" placeholder="Search by name or symbol..." />
               <div class="swap-token-list">
                 ${tokenItems}
               </div>
@@ -890,56 +892,86 @@ export class Modal {
       }
       overlay = document.getElementById('swap-selector-overlay');
       closeBtn = document.getElementById('swap-selector-close');
+    } else {
+      // Overlay zaten varsa, token listesini güncelle
+      const tokenList = overlay.querySelector('.swap-token-list');
+      if (tokenList) {
+        const tokenItemsHTML = tokens.map(token => {
+          const isTestnet = token.network === 'testnet';
+          const iconStyle = token.icon ? `display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #fff; background: rgba(255,255,255,0.1);` : '';
+          const iconContent = token.icon || '';
+          return `
+            <div class="swap-token-item"
+              data-token="${token.symbol}"
+              data-network="${token.network}"
+              data-token-icon="${token.logo}"
+              data-chain-icon="${token.chainLogo}">
+              <div class="swap-token-info">
+                <div class="swap-token-logo" style="--token-icon:url('${token.logo}'); filter: ${isTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none'}; ${iconStyle}">
+                  ${iconContent}
+                  <div class="chain" style="--chain-icon:url('${token.chainLogo}'); filter: ${isTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none'};"></div>
+                </div>
+                <div>
+                  <div class="swap-token-name">${token.symbol}</div>
+                  ${token.network === 'testnet' ? `<div class="swap-token-chain">Testnet</div>` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        tokenList.innerHTML = tokenItemsHTML;
+      }
+      closeBtn = document.getElementById('swap-selector-close');
     }
     
     if (!overlay || !closeBtn) return;
     
+    // Her zaman güncel butonları al
+    const currentFromBtn = this.bodyEl.querySelector('#swap-from-btn');
+    const currentToBtn = this.bodyEl.querySelector('#swap-to-btn');
+    
     // Setup token selection for FROM button
-    if (fromBtn) {
-      const symbolEl = fromBtn.querySelector('[data-token-symbol]');
-      const networkEl = fromBtn.querySelector('[data-token-network]');
+    if (currentFromBtn) {
+      // Eski listener'ları temizle
+      const newFromBtn = currentFromBtn.cloneNode(true);
+      currentFromBtn.parentNode.replaceChild(newFromBtn, currentFromBtn);
       
-      const setFromSelection = (token, network, tokenIcon, chainIcon, label) => {
-        if (symbolEl) symbolEl.textContent = token;
-        if (networkEl) networkEl.textContent = label || network;
-        fromBtn.style.setProperty('--token-icon', `url('${tokenIcon}')`);
-        fromBtn.style.setProperty('--chain-icon', `url('${chainIcon}')`);
-        fromBtn.dataset.token = token;
-        fromBtn.dataset.network = network;
-        const tokenInfo = SWAP_CONFIG.tokenInfo[token] || {};
-        const isTestnet = tokenInfo.network === 'testnet';
-        fromBtn.querySelector('.swap-token-icon').style.filter = isTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none';
-        fromBtn.querySelector('.badge').style.filter = isTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none';
-      };
-      
-      fromBtn.addEventListener('click', (e) => {
+      const finalFromBtn = this.bodyEl.querySelector('#swap-from-btn');
+      finalFromBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.currentSwapSelectorRole = 'from';
+        // Search input'u temizle ve tüm tokenları göster
+        const searchInputEl = overlay.querySelector('#swap-token-search');
+        if (searchInputEl) {
+          searchInputEl.value = '';
+          const tokenItems = overlay.querySelectorAll('.swap-token-item');
+          tokenItems.forEach(item => {
+            item.style.display = 'flex';
+          });
+        }
         overlay.classList.add('active');
       });
     }
     
     // Setup token selection for TO button
-    if (toBtn) {
-      const symbolEl = toBtn.querySelector('[data-token-symbol]');
-      const networkEl = toBtn.querySelector('[data-token-network]');
+    if (currentToBtn) {
+      // Eski listener'ları temizle
+      const newToBtn = currentToBtn.cloneNode(true);
+      currentToBtn.parentNode.replaceChild(newToBtn, currentToBtn);
       
-      const setToSelection = (token, network, tokenIcon, chainIcon, label) => {
-        if (symbolEl) symbolEl.textContent = token;
-        if (networkEl) networkEl.textContent = label || network;
-        toBtn.style.setProperty('--token-icon', `url('${tokenIcon}')`);
-        toBtn.style.setProperty('--chain-icon', `url('${chainIcon}')`);
-        toBtn.dataset.token = token;
-        toBtn.dataset.network = network;
-        const tokenInfo = SWAP_CONFIG.tokenInfo[token] || {};
-        const isTestnet = tokenInfo.network === 'testnet';
-        toBtn.querySelector('.swap-token-icon').style.filter = isTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none';
-        toBtn.querySelector('.badge').style.filter = isTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none';
-      };
-      
-      toBtn.addEventListener('click', (e) => {
+      const finalToBtn = this.bodyEl.querySelector('#swap-to-btn');
+      finalToBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.currentSwapSelectorRole = 'to';
+        // Search input'u temizle ve tüm tokenları göster
+        const searchInputEl = overlay.querySelector('#swap-token-search');
+        if (searchInputEl) {
+          searchInputEl.value = '';
+          const tokenItems = overlay.querySelectorAll('.swap-token-item');
+          tokenItems.forEach(item => {
+            item.style.display = 'flex';
+          });
+        }
         overlay.classList.add('active');
       });
     }
@@ -955,69 +987,108 @@ export class Modal {
       if (e.target === overlay) overlay.classList.remove('active');
     });
     
-    // Network filter
-    const filterTokens = (network) => {
-      overlay.querySelectorAll('.swap-token-item').forEach(item => {
-        if (network === 'all' || item.dataset.network === network) {
-          item.style.display = 'flex';
-        } else {
-          item.style.display = 'none';
-        }
+    // Search functionality
+    const searchInput = overlay.querySelector('#swap-token-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        const tokenItems = overlay.querySelectorAll('.swap-token-item');
+        
+        tokenItems.forEach(item => {
+          const tokenSymbol = item.dataset.token.toLowerCase();
+          const tokenName = item.querySelector('.swap-token-name')?.textContent.toLowerCase() || '';
+          const network = item.dataset.network.toLowerCase();
+          
+          // Arama terimi token symbol, name veya network'te geçiyorsa göster
+          if (tokenSymbol.includes(searchTerm) || 
+              tokenName.includes(searchTerm) || 
+              network.includes(searchTerm) ||
+              searchTerm === '') {
+            item.style.display = 'flex';
+          } else {
+            item.style.display = 'none';
+          }
+        });
       });
+    }
+    
+    // Token selection - event delegation kullan (dinamik elementler için)
+    const handleTokenClick = (e) => {
+      const item = e.target.closest('.swap-token-item');
+      if (!item) return;
+      
+      const token = item.dataset.token;
+      const network = item.dataset.network;
+      const tokenIcon = item.dataset.tokenIcon;
+      const chainIcon = item.dataset.chainIcon;
+      const label = network === 'mainnet' ? 'Mainnet' : 'Testnet';
+      
+      const finalFromBtn = this.bodyEl.querySelector('#swap-from-btn');
+      const finalToBtn = this.bodyEl.querySelector('#swap-to-btn');
+      
+      if (this.currentSwapSelectorRole === 'from' && finalFromBtn) {
+        const symbolEl = finalFromBtn.querySelector('[data-token-symbol]');
+        const networkEl = finalFromBtn.querySelector('[data-token-network]');
+        if (symbolEl) symbolEl.textContent = token;
+        // Sadece testnet tokenlarında network bilgisini göster
+        if (networkEl) {
+          if (network === 'testnet') {
+            networkEl.textContent = 'Testnet';
+            networkEl.style.display = 'block';
+          } else {
+            networkEl.style.display = 'none';
+          }
+        }
+        finalFromBtn.style.setProperty('--token-icon', `url('${tokenIcon}')`);
+        finalFromBtn.style.setProperty('--chain-icon', `url('${chainIcon}')`);
+        finalFromBtn.dataset.token = token;
+        finalFromBtn.dataset.network = network;
+        const tokenInfo = SWAP_CONFIG.tokenInfo[token] || {};
+        const isTestnet = tokenInfo.network === 'testnet';
+        const iconEl = finalFromBtn.querySelector('.swap-token-icon');
+        const badgeEl = finalFromBtn.querySelector('.badge');
+        if (iconEl) iconEl.style.filter = isTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none';
+        if (badgeEl) badgeEl.style.filter = isTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none';
+        this.loadSwapBalances();
+        this.handleSwapQuote();
+      } else if (this.currentSwapSelectorRole === 'to' && finalToBtn) {
+        const symbolEl = finalToBtn.querySelector('[data-token-symbol]');
+        const networkEl = finalToBtn.querySelector('[data-token-network]');
+        if (symbolEl) symbolEl.textContent = token;
+        // Sadece testnet tokenlarında network bilgisini göster
+        if (networkEl) {
+          if (network === 'testnet') {
+            networkEl.textContent = 'Testnet';
+            networkEl.style.display = 'block';
+          } else {
+            networkEl.style.display = 'none';
+          }
+        }
+        finalToBtn.style.setProperty('--token-icon', `url('${tokenIcon}')`);
+        finalToBtn.style.setProperty('--chain-icon', `url('${chainIcon}')`);
+        finalToBtn.dataset.token = token;
+        finalToBtn.dataset.network = network;
+        const tokenInfo = SWAP_CONFIG.tokenInfo[token] || {};
+        const isTestnet = tokenInfo.network === 'testnet';
+        const iconEl = finalToBtn.querySelector('.swap-token-icon');
+        const badgeEl = finalToBtn.querySelector('.badge');
+        if (iconEl) iconEl.style.filter = isTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none';
+        if (badgeEl) badgeEl.style.filter = isTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none';
+        this.loadSwapBalances();
+        this.handleSwapQuote();
+      }
+      
+      overlay.classList.remove('active');
     };
     
-    overlay.querySelectorAll('.swap-network-item').forEach(item => {
-      item.addEventListener('click', () => {
-        overlay.querySelectorAll('.swap-network-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        filterTokens(item.dataset.network);
-      });
-    });
+    // Event delegation kullan - token list container'a ekle
+    const tokenListContainer = overlay.querySelector('.swap-token-list');
+    if (tokenListContainer) {
+      // Eski listener'ı kaldır ve yenisini ekle
+      tokenListContainer.removeEventListener('click', handleTokenClick);
+      tokenListContainer.addEventListener('click', handleTokenClick);
+    }
     
-    // Token selection
-    overlay.querySelectorAll('.swap-token-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const token = item.dataset.token;
-        const network = item.dataset.network;
-        const tokenIcon = item.dataset.tokenIcon;
-        const chainIcon = item.dataset.chainIcon;
-        const label = network === 'mainnet' ? 'Mainnet' : 'Testnet';
-        
-        if (this.currentSwapSelectorRole === 'from' && fromBtn) {
-          const symbolEl = fromBtn.querySelector('[data-token-symbol]');
-          const networkEl = fromBtn.querySelector('[data-token-network]');
-          if (symbolEl) symbolEl.textContent = token;
-          if (networkEl) networkEl.textContent = label;
-          fromBtn.style.setProperty('--token-icon', `url('${tokenIcon}')`);
-          fromBtn.style.setProperty('--chain-icon', `url('${chainIcon}')`);
-          fromBtn.dataset.token = token;
-          fromBtn.dataset.network = network;
-          const tokenInfo = SWAP_CONFIG.tokenInfo[token] || {};
-          const isTestnet = tokenInfo.network === 'testnet';
-          fromBtn.querySelector('.swap-token-icon').style.filter = isTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none';
-          fromBtn.querySelector('.badge').style.filter = isTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none';
-          this.loadSwapBalances();
-          this.handleSwapQuote();
-        } else if (this.currentSwapSelectorRole === 'to' && toBtn) {
-          const symbolEl = toBtn.querySelector('[data-token-symbol]');
-          const networkEl = toBtn.querySelector('[data-token-network]');
-          if (symbolEl) symbolEl.textContent = token;
-          if (networkEl) networkEl.textContent = label;
-          toBtn.style.setProperty('--token-icon', `url('${tokenIcon}')`);
-          toBtn.style.setProperty('--chain-icon', `url('${chainIcon}')`);
-          toBtn.dataset.token = token;
-          toBtn.dataset.network = network;
-          const tokenInfo = SWAP_CONFIG.tokenInfo[token] || {};
-          const isTestnet = tokenInfo.network === 'testnet';
-          toBtn.querySelector('.swap-token-icon').style.filter = isTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none';
-          toBtn.querySelector('.badge').style.filter = isTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none';
-          this.loadSwapBalances();
-          this.handleSwapQuote();
-        }
-        
-        overlay.classList.remove('active');
-      });
-    });
   }
 
   /**
@@ -1255,9 +1326,25 @@ export class Modal {
     const toNetworkEl = toBtn.querySelector('[data-token-network]');
     
     if (fromSymbolEl) fromSymbolEl.textContent = toToken;
-    if (fromNetworkEl) fromNetworkEl.textContent = toNetwork === 'mainnet' ? 'Mainnet' : 'Testnet';
+    // Sadece testnet tokenlarında network bilgisini göster
+    if (fromNetworkEl) {
+      if (toNetwork === 'testnet') {
+        fromNetworkEl.textContent = 'Testnet';
+        fromNetworkEl.style.display = 'block';
+      } else {
+        fromNetworkEl.style.display = 'none';
+      }
+    }
     if (toSymbolEl) toSymbolEl.textContent = fromToken;
-    if (toNetworkEl) toNetworkEl.textContent = fromNetwork === 'mainnet' ? 'Mainnet' : 'Testnet';
+    // Sadece testnet tokenlarında network bilgisini göster
+    if (toNetworkEl) {
+      if (fromNetwork === 'testnet') {
+        toNetworkEl.textContent = 'Testnet';
+        toNetworkEl.style.display = 'block';
+      } else {
+        toNetworkEl.style.display = 'none';
+      }
+    }
     
     // Update filter effects
     const fromTokenInfo = SWAP_CONFIG.tokenInfo[toToken] || {};
