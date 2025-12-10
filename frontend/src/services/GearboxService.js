@@ -517,14 +517,17 @@ class GearboxServiceClass {
 
     const amountIn = ethers.parseUnits(amount.toString(), actualTokenInfo.decimals);
 
-    // Check WSOMI balance
+    // Check token contract exists (read-only check)
     const provider = this.getProvider();
-    const tokenContract = new ethers.Contract(actualTokenInfo.address, ERC20_ABI, provider);
     const code = await provider.getCode(actualTokenInfo.address);
     if (code === '0x' || code === '0x0') {
       throw new Error('Token contract not found');
     }
     
+    // Create token contract with signer (needed for approve transaction)
+    const tokenContract = new ethers.Contract(actualTokenInfo.address, ERC20_ABI, signer);
+    
+    // Check WSOMI balance
     const balance = await tokenContract.balanceOf(userAddress);
     if (balance < amountIn) {
       throw new Error(`Insufficient ${actualTokenSymbol} balance. You need to wrap SOMI to WSOMI first.`);
