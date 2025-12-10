@@ -19,144 +19,187 @@ export async function generateSwapContent(walletAddress = null) {
   const tokens = await SwapService.getSupportedTokens();
   const settings = SwapService.getSettings();
   
-  // Determine default tokens based on network
-  const isMainnet = await SwapService.isMainnet();
-  const defaultFrom = isMainnet ? 'SOMI' : 'STT';
-  const defaultTo = isMainnet ? 'WSOMI' : 'USDT';
+  // Default tokens (SOMI -> WSOMI for mainnet, STT -> USDT for testnet)
+  const defaultFrom = 'SOMI';
+  const defaultTo = 'WSOMI';
   
-  // Generate token options HTML
-  const tokenOptionsFrom = tokens.map(t => 
-    `<option value="${t.symbol}" ${t.symbol === defaultFrom ? 'selected' : ''}>${t.symbol}</option>`
-  ).join('');
+  // Get initial balances if wallet is connected
+  let fromBalance = '0.00';
+  let toBalance = '0.00';
   
-  const tokenOptionsTo = tokens.map(t => 
-    `<option value="${t.symbol}" ${t.symbol === defaultTo ? 'selected' : ''}>${t.symbol}</option>`
-  ).join('');
-  
-  // Network switch button styles
-  const mainnetBtnStyle = isMainnet 
-    ? 'padding: 6px 20px; background: rgba(var(--theme-rgb), 0.2); border: 1px solid var(--theme-color); color: var(--theme-color); border-radius: 4px; cursor: pointer; font-family: \'Courier New\', monospace; font-size: 0.85em; text-transform: uppercase; transition: all 0.3s;'
-    : 'padding: 6px 20px; background: transparent; border: 1px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.5); border-radius: 4px; cursor: pointer; font-family: \'Courier New\', monospace; font-size: 0.85em; text-transform: uppercase; transition: all 0.3s;';
-  
-  const testnetBtnStyle = !isMainnet
-    ? 'padding: 6px 20px; background: rgba(var(--theme-rgb), 0.2); border: 1px solid var(--theme-color); color: var(--theme-color); border-radius: 4px; cursor: pointer; font-family: \'Courier New\', monospace; font-size: 0.85em; text-transform: uppercase; transition: all 0.3s;'
-    : 'padding: 6px 20px; background: transparent; border: 1px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.5); border-radius: 4px; cursor: pointer; font-family: \'Courier New\', monospace; font-size: 0.85em; text-transform: uppercase; transition: all 0.3s;';
+  if (walletAddress) {
+    try {
+      fromBalance = await SwapService.getTokenBalance(defaultFrom, walletAddress);
+      toBalance = await SwapService.getTokenBalance(defaultTo, walletAddress);
+    } catch (error) {
+      console.error('Error loading initial swap balances:', error);
+    }
+  }
 
   const isConnected = !!walletAddress;
   const buttonText = isConnected ? 'SWAP TOKENS' : 'CONNECT WALLET';
   const buttonDisabled = isConnected ? '' : 'disabled';
+  
+  // Get token info for default tokens
+  const fromTokenInfo = SWAP_CONFIG.tokenInfo[defaultFrom] || {};
+  const toTokenInfo = SWAP_CONFIG.tokenInfo[defaultTo] || {};
+  
+  // Determine logo URLs
+  const fromLogo = fromTokenInfo.logo || '/somniablack.png';
+  const fromChainLogo = fromTokenInfo.chainLogo || '/somniablack.png';
+  const toLogo = toTokenInfo.logo || '/somniablack.png';
+  const toChainLogo = toTokenInfo.chainLogo || '/somniablack.png';
+  
+  // Check if testnet (for grayscale effect)
+  const fromIsTestnet = fromTokenInfo.network === 'testnet';
+  const toIsTestnet = toTokenInfo.network === 'testnet';
 
   return `
     <style>
       .swap-container {
         display: flex;
         flex-direction: column;
-        gap: 15px;
+        gap: 12px;
       }
       .swap-box {
         background: rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(var(--theme-rgb), 0.3);
-        padding: 12px;
-        border-radius: 4px;
+        border: 1px solid rgba(var(--theme-rgb), 0.25);
+        border-radius: 10px;
+        padding: 14px;
       }
       .swap-header {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 8px;
-        font-size: 0.8em;
-        color: rgba(255, 255, 255, 0.6);
-        font-family: 'Courier New', monospace;
-      }
-      .input-row {
-        display: flex;
         align-items: center;
-        gap: 10px;
-        background: rgba(0, 0, 0, 0.5);
-        border: 1px solid rgba(var(--theme-rgb), 0.5);
-        padding: 5px 10px;
-        border-radius: 4px;
+        margin-bottom: 8px;
+        font-family: 'Courier New', monospace;
+        color: rgba(255,255,255,0.8);
       }
-      .input-row:focus-within {
-        border-color: var(--theme-color);
-        box-shadow: 0 0 10px rgba(var(--theme-rgb), 0.2);
+      .swap-label {
+        font-size: 0.9em;
+        color: rgba(255,255,255,0.7);
       }
-      .cyber-input {
+      .swap-balance {
+        font-size: 0.85em;
+        color: rgba(255,255,255,0.6);
+      }
+      .swap-token-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .swap-token-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 16px;
+        padding: 8px 12px;
+        font-family: 'Courier New', monospace;
+        color: #fff;
+        cursor: pointer;
+        position: relative;
+      }
+      .swap-token-btn span {
+        font-weight: 700;
+      }
+      .swap-token-icon {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--token-icon, url('/somniablack.png')) center/cover no-repeat;
+        filter: ${fromIsTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none'};
+      }
+      .swap-token-icon .badge {
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--chain-icon, url('/somniablack.png')) center/cover no-repeat;
+        bottom: -2px;
+        right: -2px;
+        border: 2px solid #0d0a14;
+        filter: ${fromIsTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none'};
+      }
+      .swap-token-chain {
+        font-size: 0.85em;
+        color: rgba(255,255,255,0.6);
+      }
+      .swap-amount-row {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .swap-amount-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+      .swap-amount-input {
+        font-size: 2.2em;
+        font-weight: 700;
+        color: #fff;
         background: transparent;
         border: none;
-        color: #fff;
-        font-size: 1.2em;
+        outline: none;
         width: 100%;
         font-family: 'Courier New', monospace;
-        outline: none;
+        text-align: left;
       }
-      .cyber-input::-webkit-outer-spin-button,
-      .cyber-input::-webkit-inner-spin-button {
+      .swap-amount-input::-webkit-outer-spin-button,
+      .swap-amount-input::-webkit-inner-spin-button {
         -webkit-appearance: none;
         margin: 0;
       }
-      .token-select {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(var(--theme-rgb), 0.3);
-        color: var(--theme-color);
-        padding: 6px 10px;
-        border-radius: 15px;
-        cursor: pointer;
-        font-weight: bold;
-        font-family: 'Courier New', monospace;
-        outline: none;
-        min-width: 80px;
+      .swap-amount-input[type="number"] {
+        -moz-appearance: textfield;
       }
-      .token-select:hover {
-        background: rgba(255, 255, 255, 0.2);
-      }
-      .token-select option {
-        background: #1a1428;
-        color: #fff;
-      }
-      .percent-row {
+      .swap-percent {
         display: flex;
-        gap: 8px;
-        margin-top: 10px;
-        justify-content: flex-end;
+        gap: 6px;
       }
-      .percent-btn {
-        background: transparent;
-        border: 1px solid rgba(var(--theme-rgb), 0.3);
-        color: var(--theme-color);
-        padding: 2px 8px;
-        font-size: 0.7em;
+      .swap-percent-btn {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        color: #fff;
+        padding: 4px 10px;
+        border-radius: 12px;
         cursor: pointer;
-        transition: all 0.2s;
         font-family: 'Courier New', monospace;
+        font-size: 0.8em;
+        transition: all 0.2s;
       }
-      .percent-btn:hover {
+      .swap-percent-btn:hover {
         background: rgba(var(--theme-rgb), 0.2);
-        border-color: var(--theme-color);
+        border-color: rgba(var(--theme-rgb), 0.5);
+        color: var(--theme-color);
       }
       .swap-divider {
         display: flex;
         justify-content: center;
-        margin: -10px 0;
-        z-index: 2;
-        position: relative;
+        align-items: center;
+        margin: 4px 0;
       }
-      .switch-btn {
-        background: #0d0a14;
-        border: 2px solid var(--theme-color);
-        color: var(--theme-color);
+      .swap-arrow {
         width: 36px;
         height: 36px;
-        border-radius: 50%;
-        cursor: pointer;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.2);
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.3s;
+        color: #fff;
         font-size: 1.2em;
+        cursor: pointer;
+        transition: all 0.3s;
       }
-      .switch-btn:hover {
-        background: var(--theme-color);
-        color: #0d0a14;
+      .swap-arrow:hover {
+        background: rgba(var(--theme-rgb), 0.2);
+        border-color: var(--theme-color);
         transform: rotate(180deg);
       }
       .swap-details {
@@ -183,89 +226,70 @@ export async function generateSwapContent(walletAddress = null) {
       }
       .swap-btn {
         width: 100%;
-        padding: 15px;
-        font-size: 1.1em;
-        margin-top: 10px;
+        padding: 14px;
+        margin-top: 4px;
+        font-size: 1em;
       }
       .swap-btn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
       }
-      .swap-status {
-        text-align: center;
-        padding: 8px;
-        margin-bottom: 10px;
-        border-radius: 4px;
-        font-family: 'Courier New', monospace;
-        font-size: 0.85em;
-      }
-      .swap-status.ready {
-        background: rgba(0, 255, 170, 0.1);
-        border: 1px solid rgba(0, 255, 170, 0.3);
-        color: #00ffaa;
-      }
-      .swap-status.not-connected {
-        background: rgba(255, 170, 0, 0.1);
-        border: 1px solid rgba(255, 170, 0, 0.3);
-        color: #ffaa00;
-      }
       .text-green { color: #00ffaa; }
       .text-neon { color: var(--theme-color); }
-      .estimated-badge {
-        font-size: 0.7em;
-        background: rgba(255, 170, 0, 0.2);
-        color: #ffaa00;
-        padding: 2px 6px;
-        border-radius: 3px;
-        margin-left: 5px;
-      }
     </style>
 
     <div class="swap-container">
-      <!-- Network Switch -->
-      <div class="network-switch-container" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 15px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px;">
-        <span style="font-size: 0.8em; color: rgba(255,255,255,0.7); font-family: 'Courier New', monospace;">NETWORK:</span>
-        <button class="network-switch-btn" data-network="mainnet" style="${mainnetBtnStyle}">
-          MAINNET
-        </button>
-        <button class="network-switch-btn" data-network="testnet" style="${testnetBtnStyle}">
-          TESTNET
-        </button>
-      </div>
-
       <div class="swap-box from-box">
         <div class="swap-header">
           <span class="swap-label">FROM</span>
-          <span class="swap-balance" id="from-balance">Balance: --</span>
+          <span class="swap-balance" id="from-balance">Balance: ${parseFloat(fromBalance || '0').toFixed(4)} ${defaultFrom}</span>
         </div>
-        <div class="input-row">
-          <input type="number" class="cyber-input" id="from-amount" placeholder="0.0" value="" step="0.01" min="0">
-          <select class="token-select" id="from-token">
-            ${tokenOptionsFrom}
-          </select>
+        <div class="swap-token-row">
+          <div class="swap-token-btn" data-token-role="from" id="swap-from-btn" 
+               style="--token-icon:url('${fromLogo}'); --chain-icon:url('${fromChainLogo}');">
+            <div class="swap-token-icon"><div class="badge"></div></div>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span data-token-symbol>${defaultFrom}</span>
+              <small class="swap-token-chain" data-token-network>${fromTokenInfo.network === 'mainnet' ? 'Mainnet' : 'Testnet'}</small>
+            </div>
+          </div>
         </div>
-        <div class="percent-row">
-          <button class="percent-btn" data-percent="25">25%</button>
-          <button class="percent-btn" data-percent="50">50%</button>
-          <button class="percent-btn" data-percent="75">75%</button>
-          <button class="percent-btn" data-percent="100">MAX</button>
+        <div class="swap-amount-row">
+          <div class="swap-amount-top">
+            <input type="number" class="swap-amount-input" id="from-amount" value="0" step="any" min="0" placeholder="0" />
+          </div>
+          <div class="swap-percent">
+            <button class="swap-percent-btn" data-percent="25">25%</button>
+            <button class="swap-percent-btn" data-percent="50">50%</button>
+            <button class="swap-percent-btn" data-percent="75">75%</button>
+            <button class="swap-percent-btn" data-percent="100">MAX</button>
+          </div>
         </div>
       </div>
 
       <div class="swap-divider">
-        <button class="switch-btn" id="switch-tokens">⇅</button>
+        <div class="swap-arrow" id="switch-tokens">⇅</div>
       </div>
 
       <div class="swap-box to-box">
         <div class="swap-header">
           <span class="swap-label">TO (ESTIMATED)</span>
-          <span class="swap-balance" id="to-balance">Balance: --</span>
+          <span class="swap-balance" id="to-balance">Balance: ${parseFloat(toBalance || '0').toFixed(4)} ${defaultTo}</span>
         </div>
-        <div class="input-row">
-          <input type="number" class="cyber-input" id="to-amount" placeholder="0.0" readonly>
-          <select class="token-select" id="to-token">
-            ${tokenOptionsTo}
-          </select>
+        <div class="swap-token-row">
+          <div class="swap-token-btn" data-token-role="to" id="swap-to-btn"
+               style="--token-icon:url('${toLogo}'); --chain-icon:url('${toChainLogo}'); ${toIsTestnet ? 'filter: grayscale(0.7) brightness(0.8);' : ''}">
+            <div class="swap-token-icon" style="filter: ${toIsTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none'};"><div class="badge" style="filter: ${toIsTestnet ? 'grayscale(0.7) brightness(0.8)' : 'none'};"></div></div>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span data-token-symbol>${defaultTo}</span>
+              <small class="swap-token-chain" data-token-network>${toTokenInfo.network === 'mainnet' ? 'Mainnet' : 'Testnet'}</small>
+            </div>
+          </div>
+        </div>
+        <div class="swap-amount-row">
+          <div class="swap-amount-top">
+            <div class="swap-amount-input" id="to-amount" style="pointer-events: none; opacity: 0.7;">0</div>
+          </div>
         </div>
       </div>
 
@@ -292,8 +316,6 @@ export async function generateSwapContent(walletAddress = null) {
         <span class="btn-text">${buttonText}</span>
         <span class="btn-loader hidden">PROCESSING...</span>
       </button>
-      
-      <div class="faucet-message hidden"></div>
     </div>
   `;
 }

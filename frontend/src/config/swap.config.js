@@ -25,11 +25,49 @@ export const SWAP_CONFIG = {
   
   // Token display info
   tokenInfo: {
-    STT: { symbol: 'STT', name: 'Somnia Token', icon: '◈', decimals: 18 },
-    WSTT: { symbol: 'WSTT', name: 'Wrapped STT', icon: '◈', decimals: 18 },
-    USDT: { symbol: 'USDT', name: 'Tether USD', icon: '$', decimals: 18 },
-    SOMI: { symbol: 'SOMI', name: 'Somnia Token', icon: '◈', decimals: 18 },
-    WSOMI: { symbol: 'WSOMI', name: 'Wrapped Somnia Token', icon: '◈', decimals: 18 }
+    STT: { 
+      symbol: 'STT', 
+      name: 'Somnia Token', 
+      icon: 'S', 
+      decimals: 18,
+      network: 'testnet',
+      logo: '/somniablack.png', // Will be grayed out for testnet
+      chainLogo: '/somniablack.png' // Will be grayed out
+    },
+    WSTT: { 
+      symbol: 'WSTT', 
+      name: 'Wrapped STT', 
+      icon: '◈', 
+      decimals: 18,
+      network: 'testnet'
+    },
+    USDT: { 
+      symbol: 'USDT', 
+      name: 'Tether USD', 
+      icon: 'U', 
+      decimals: 18,
+      network: 'testnet',
+      logo: '/somniablack.png', // Will be grayed out for testnet
+      chainLogo: '/somniablack.png' // Will be grayed out
+    },
+    SOMI: { 
+      symbol: 'SOMI', 
+      name: 'Somnia Token', 
+      icon: '◈', 
+      decimals: 18,
+      network: 'mainnet',
+      logo: '/somniablack.png',
+      chainLogo: '/somniablack.png'
+    },
+    WSOMI: { 
+      symbol: 'WSOMI', 
+      name: 'Wrapped Somnia Token', 
+      icon: '◈', 
+      decimals: 18,
+      network: 'mainnet',
+      logo: '/somniablack.png',
+      chainLogo: '/somniablack.png'
+    }
   },
   
   // Supported swap pairs (for UI dropdown)

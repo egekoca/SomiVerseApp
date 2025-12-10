@@ -527,22 +527,54 @@ class SwapServiceClass {
    * Get supported tokens list (filtered by network)
    */
   async getSupportedTokens() {
-    const isMainnet = await this.isMainnet();
-    
-    // Filter tokens based on network
-    let tokens;
-    if (isMainnet) {
-      // Mainnet: Only SOMI and WSOMI
-      tokens = ['SOMI', 'WSOMI'];
-    } else {
-      // Testnet: Only STT and USDT
-      tokens = ['STT', 'USDT'];
-    }
+    // Return all tokens (mainnet and testnet) - user will select in popup
+    const tokens = ['SOMI', 'WSOMI', 'STT', 'USDT'];
     
     return tokens.map(symbol => ({
       symbol,
       ...SWAP_CONFIG.tokenInfo[symbol]
     }));
+  }
+  
+  /**
+   * Get token balance based on network
+   * @param {string} tokenSymbol - Token symbol
+   * @param {string} userAddress - User wallet address
+   */
+  async getTokenBalance(tokenSymbol, userAddress) {
+    if (!userAddress) return '0';
+    
+    try {
+      const tokenInfo = SWAP_CONFIG.tokenInfo[tokenSymbol];
+      if (!tokenInfo) return '0';
+      
+      // Use appropriate provider based on network
+      let provider;
+      if (tokenInfo.network === 'mainnet') {
+        provider = new ethers.JsonRpcProvider('https://api.infra.mainnet.somnia.network');
+      } else {
+        provider = this.getProvider(); // Testnet RPC
+      }
+      
+      // Native tokens
+      if (tokenSymbol === 'STT' || tokenSymbol === 'SOMI') {
+        const balance = await provider.getBalance(userAddress);
+        return ethers.formatUnits(balance, 18);
+      } else {
+        // ERC20 tokens
+        const tokenAddress = this.getTokenAddress(tokenSymbol);
+        if (!tokenAddress || tokenAddress === '0x0000000000000000000000000000000000000000') {
+          return '0';
+        }
+        
+        const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        const balance = await tokenContract.balanceOf(userAddress);
+        return ethers.formatUnits(balance, tokenInfo.decimals || 18);
+      }
+    } catch (error) {
+      console.error(`Error getting balance for ${tokenSymbol}:`, error);
+      return '0';
+    }
   }
 
   /**
