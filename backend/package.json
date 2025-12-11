@@ -6,7 +6,8 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
-    "dev": "node --watch src/app.js"
+    "dev": "node --watch src/app.js",
+    "reset-positions": "node src/scripts/reset-positions.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.86.2",

@@ -2245,7 +2245,7 @@ export class Modal {
   async initDomainUI() {
     await domainService.init();
 
-    // Load SOMI balance
+    // Load SOMI balance (only once, not blocking)
     if (this.walletAddress) {
       this.loadDomainSOMIBalance();
     }
@@ -2271,11 +2271,20 @@ export class Modal {
       });
     });
 
-    // Domain name input - check availability
+    // Domain name input - check availability with debounce
     const domainInput = this.bodyEl.querySelector('#domain-name-input');
     if (domainInput) {
+      let debounceTimer = null;
       domainInput.addEventListener('input', () => {
-        this.checkDomainAvailability();
+        // Clear previous timer
+        if (debounceTimer) {
+          clearTimeout(debounceTimer);
+        }
+        
+        // Set new timer - wait 500ms after user stops typing
+        debounceTimer = setTimeout(() => {
+          this.checkDomainAvailability();
+        }, 500);
       });
     }
 

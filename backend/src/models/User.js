@@ -151,21 +151,11 @@ export class User {
 
   /**
    * Update User Position
+   * DISABLED: Position saving is disabled for performance
    */
   async updatePosition(pos) {
-    // Validate input lightly
-    if (typeof pos.x !== 'number' || typeof pos.z !== 'number') {
-      throw new Error('Invalid position format');
-    }
-
-    this.position = pos;
-
-    const { error } = await supabase
-      .from('users')
-      .update({ position: this.position })
-      .eq('id', this.id);
-
-    if (error) throw error;
+    // Position saving is disabled - always return default position
+    this.position = { x: 0, y: 0, z: 0 };
     return this.position;
   }
 

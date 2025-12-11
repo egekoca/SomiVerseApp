@@ -127,13 +127,11 @@ class ProfileServiceClass {
 
   /**
    * Update position
+   * DISABLED: Position saving is disabled for performance
    */
   async updatePosition(walletAddress, pos) {
-    // Optimization: Don't wait for response
-    this.request(`/profile/${walletAddress}/position`, {
-      method: 'POST',
-      body: JSON.stringify(pos)
-    });
+    // Position saving is disabled - do nothing
+    return;
   }
 
   /**

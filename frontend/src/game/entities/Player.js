@@ -448,16 +448,19 @@ export class Player {
     if (isMoving) {
       this.userData.walkTime += CONFIG.player.walkAnimationSpeed;
       const wt = this.userData.walkTime;
+      const sin = Math.sin(wt); // Cache sin calculation
       
-      this.userData.leftArm.rotation.x = Math.sin(wt) * 0.5;
-      this.userData.rightArm.rotation.x = -Math.sin(wt) * 0.5;
-      this.userData.leftLeg.rotation.x = -Math.sin(wt) * 0.6;
-      this.userData.rightLeg.rotation.x = Math.sin(wt) * 0.6;
+      this.userData.leftArm.rotation.x = sin * 0.5;
+      this.userData.rightArm.rotation.x = -sin * 0.5;
+      this.userData.leftLeg.rotation.x = -sin * 0.6;
+      this.userData.rightLeg.rotation.x = sin * 0.6;
     } else {
-      this.userData.leftArm.rotation.x *= 0.8;
-      this.userData.rightArm.rotation.x *= 0.8;
-      this.userData.leftLeg.rotation.x *= 0.8;
-      this.userData.rightLeg.rotation.x *= 0.8;
+      // Faster decay for smoother stop
+      const decay = 0.85;
+      this.userData.leftArm.rotation.x *= decay;
+      this.userData.rightArm.rotation.x *= decay;
+      this.userData.leftLeg.rotation.x *= decay;
+      this.userData.rightLeg.rotation.x *= decay;
     }
   }
 

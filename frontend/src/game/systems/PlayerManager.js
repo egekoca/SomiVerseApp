@@ -10,9 +10,6 @@ export class PlayerManager {
     this.cameraManager = cameraManager;
     this.modal = modal;
     this.currentSomName = null;
-    this.lastSavedPos = null;
-    this.lastPositionSave = 0;
-    this.saveInterval = 5000; // Save every 5 seconds
   }
 
   update(inputSystem, collisionSystem) {
@@ -59,33 +56,6 @@ export class PlayerManager {
     }
   }
 
-  savePosition(physicsColliders) {
-    const profile = ProfileService.getCurrentProfile();
-    // Only save if we have a profile AND the player is active
-    if (profile && this.player) {
-      const pos = this.player.getPosition();
-      const posData = { x: pos.x, y: pos.y, z: pos.z };
-      
-      // Optimization: Don't save if didn't move significantly since last save
-      if (this.lastSavedPos && 
-          Math.abs(this.lastSavedPos.x - pos.x) < 0.5 && 
-          Math.abs(this.lastSavedPos.z - pos.z) < 0.5) {
-        return;
-      }
-
-      console.log('Saving player position:', posData);
-      ProfileService.updatePosition(profile.wallet_address, posData);
-      this.lastSavedPos = { ...posData };
-    }
-  }
-
-  shouldSavePosition(now) {
-    return now - this.lastPositionSave > this.saveInterval;
-  }
-
-  markPositionSaved(now) {
-    this.lastPositionSave = now;
-  }
 
   handleWalletConnected(detail) {
     const { profile, somName } = detail;
@@ -94,23 +64,8 @@ export class PlayerManager {
     this.currentSomName = somName || null;
     
     if (this.player && profile) {
-      // Check if profile has saved position
-      if (profile.position && typeof profile.position.x === 'number') {
-        const x = Number(profile.position.x);
-        const z = Number(profile.position.z);
-
-        this.player.getMesh().position.set(x, 0, z);
-        this.cameraManager.followTarget(this.player.getPosition());
-        
-        // Sync local saved pos so we don't re-save immediately
-        this.lastSavedPos = { x, y: 0, z };
-        
-        console.log('Player LOADED at saved position:', {x, z});
-      } else {
-        // No saved position object -> Reset to start
-        console.log('No valid position data. Resetting to spawn.');
-        this.resetPlayerState(profile);
-      }
+      // Always start at spawn point (0, 0, 0)
+      this.resetPlayerState(profile);
 
       // Apply visuals
       if (profile.visual_config) {

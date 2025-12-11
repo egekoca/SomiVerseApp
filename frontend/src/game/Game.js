@@ -164,13 +164,6 @@ export class Game {
       }
     });
 
-    // Save position before unload
-    window.addEventListener('beforeunload', () => {
-      if (this.playerManager && this.collisionSystem) {
-        this.playerManager.savePosition(this.collisionSystem.getColliders());
-      }
-    });
-
     return this;
   }
 
@@ -275,12 +268,6 @@ export class Game {
     // Update player movement
     if (this.playerManager && this.collisionSystem) {
       this.playerManager.update(this.inputSystem, this.collisionSystem);
-    }
-
-    // Save position periodically if connected
-    if (this.playerManager && this.playerManager.shouldSavePosition(now)) {
-      this.playerManager.savePosition(this.collisionSystem.getColliders());
-      this.playerManager.markPositionSaved(now);
     }
 
     // Update world (highways, billboards, buildings)
