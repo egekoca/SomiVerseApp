@@ -15,9 +15,22 @@ export class ZoneManager {
     const { mapLimit, collisionPadding, sideRoadDistance, buildingDistance } = CONFIG.city;
 
     // -- YOLLAR (Grid Sistemi) --
-    // Merkez Yollar
-    this.addZone(0, 0, collisionPadding, mapLimit * 2);
-    this.addZone(0, 0, mapLimit * 2, collisionPadding);
+    // Merkez Yollar - Roundabout için merkez bölgeyi çıkart
+    const roundaboutRadius = 25;
+    const roundaboutInnerRadius = 15;
+    
+    // Vertical road - split into north and south segments (skip roundabout)
+    const roadGap = roundaboutRadius + 5;
+    this.addZone(0, (mapLimit + roadGap) / 2, collisionPadding, mapLimit - roadGap); // North segment
+    this.addZone(0, -(mapLimit + roadGap) / 2, collisionPadding, mapLimit - roadGap); // South segment
+    
+    // Horizontal road - split into east and west segments (skip roundabout)
+    this.addZone((mapLimit + roadGap) / 2, 0, mapLimit - roadGap, collisionPadding); // East segment
+    this.addZone(-(mapLimit + roadGap) / 2, 0, mapLimit - roadGap, collisionPadding); // West segment
+    
+    // Roundabout center island (collision zone - player can't walk on island)
+    // Also reserve entire roundabout area to prevent background buildings from spawning
+    this.addZone(0, 0, roundaboutRadius * 2.5, roundaboutRadius * 2.5); // Larger zone to prevent buildings
 
     // Yan Yollar - Dikey
     this.addZone(sideRoadDistance, 0, collisionPadding, mapLimit * 2);

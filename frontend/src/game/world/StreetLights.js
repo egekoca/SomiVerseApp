@@ -23,8 +23,10 @@ export class StreetLights {
     
     roadPositions.forEach(x => {
       for (let z = -range; z <= range; z += spacing) {
+        // Skip roundabout area (center intersection)
+        const isRoundabout = x === 0 && Math.abs(z) < 30; // Skip roundabout area
         const isIntersection = roadPositions.some(rz => Math.abs(z - rz) < 20);
-        if (!isIntersection) {
+        if (!isRoundabout && !isIntersection) {
           this.positions.push({ x: x + offset, z, rot: Math.PI, side: 1 });
           this.positions.push({ x: x - offset, z, rot: 0, side: -1 });
         }
@@ -33,8 +35,10 @@ export class StreetLights {
 
     roadPositions.forEach(z => {
       for (let x = -range; x <= range; x += spacing) {
+        // Skip roundabout area (center intersection)
+        const isRoundabout = z === 0 && Math.abs(x) < 30; // Skip roundabout area
         const isIntersection = roadPositions.some(rx => Math.abs(x - rx) < 20);
-        if (!isIntersection) {
+        if (!isRoundabout && !isIntersection) {
           this.positions.push({ x, z: z + offset, rot: -Math.PI / 2, side: 1 });
           this.positions.push({ x, z: z - offset, rot: Math.PI / 2, side: -1 });
         }
