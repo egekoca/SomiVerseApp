@@ -53,35 +53,16 @@ export class CityBase {
     const roundaboutY = 0.1;
     const roadY = 0.1; // Roads at same level
 
-    // Create roundabout as solid disk - exactly same material as roads (no color differences)
-    // Roundabout should be at same level as roads for seamless connection
-    const roundaboutGeo = new THREE.CircleGeometry(roundaboutRadius, 64);
-    const roundabout = new THREE.Mesh(roundaboutGeo, roadMat);
-    roundabout.rotation.x = -Math.PI / 2;
-    roundabout.position.set(0, roundaboutY, 0);
-    roundabout.renderOrder = 0; // Ensure proper rendering order
-    this.scene.add(roundabout);
-
-    // Create roundabout center island (empty/hollow - ground color)
-    const islandMat = new THREE.MeshLambertMaterial({ 
-      color: CONFIG.colors.ground
-    });
-    const islandGeo = new THREE.CircleGeometry(roundaboutInnerRadius, 64);
-    const island = new THREE.Mesh(islandGeo, islandMat);
-    island.rotation.x = -Math.PI / 2;
-    island.position.set(0, roundaboutY + 0.01, 0); // Slightly above to create hollow effect
-    this.scene.add(island);
-
-    // Load and place base.glb logo in center
-    this.loadRoundaboutLogo(roundaboutInnerRadius, roundaboutY);
+    // Create roundabout ONLY at center intersection (0, 0)
+    this.createRoundaboutAtIntersection(0, 0, roundaboutRadius, roundaboutInnerRadius, roundaboutY, roadMat);
 
     // Create roads connecting to roundabout
-    // Instead of full roads, create road segments that connect to roundabout
+    // Center roads connect to roundabout, side roads are full length
     const roadVGeo = new THREE.PlaneGeometry(roadW, 400, 1, 1);
     const roadHGeo = new THREE.PlaneGeometry(400, roadW, 1, 1);
 
     this.roadPositions.forEach((pos) => {
-      // Vertical roads - split into two segments (before and after roundabout)
+      // Vertical roads
       if (pos !== 0) {
         // Side roads (not center) - full length
         const roadV = new THREE.Mesh(roadVGeo, roadMat);
@@ -114,7 +95,7 @@ export class CityBase {
         this.scene.add(roadVSouth);
       }
 
-      // Horizontal roads - split into two segments (before and after roundabout)
+      // Horizontal roads
       if (pos !== 0) {
         // Side roads (not center) - full length
         const roadH = new THREE.Mesh(roadHGeo, roadMat);
@@ -161,22 +142,30 @@ export class CityBase {
     const roadW = CONFIG.city.roadWidth;
     const intersectionGap = roadW + 5;
     
-    // Create roundabout outer edge with gaps at road intersections
+    // Create roundabout outer edge - full circle with lower opacity (softer line) ONLY at center
     if (roundaboutRadius > 0) {
-      this.createRoundaboutEdge(roundaboutRadius, edgeMat, roadW);
+      const roundaboutEdgeMat = new THREE.MeshBasicMaterial({
+        color: 0x5533aa,
+        transparent: true,
+        opacity: 0.25 // Softer, more subtle line
+      });
+      this.createRoundaboutFullEdge(roundaboutRadius, roundaboutEdgeMat, 0, 0);
     }
     
     this.roadPositions.forEach(roadPos => {
       [-10, 10].forEach(edgeOffset => {
         // For center roads, skip the roundabout area completely (no edges in intersection)
+        // For side roads, use normal gap at all intersections (normal road intersections)
         const gapSize = roadPos === 0 ? roundaboutRadius + 5 : intersectionGap;
+        const useRoundaboutGap = roadPos === 0 ? roundaboutRadius : 0; // Only center roads use roundabout gap
         
         this.createEdgeSegments(
           roadPos + edgeOffset,
           'vertical',
           edgeMat,
           gapSize,
-          roadPos === 0 ? roundaboutRadius : 0
+          useRoundaboutGap,
+          roundaboutRadius // Pass roundabout radius for exact contact calculation
         );
         
         this.createEdgeSegments(
@@ -184,45 +173,24 @@ export class CityBase {
           'horizontal',
           edgeMat,
           gapSize,
-          roadPos === 0 ? roundaboutRadius : 0
+          useRoundaboutGap,
+          roundaboutRadius // Pass roundabout radius for exact contact calculation
         );
       });
     });
   }
 
-  createRoundaboutEdge(radius, material, roadWidth) {
+  createRoundaboutFullEdge(radius, material, x = 0, z = 0) {
     const edgeY = 0.13;
     const edgeThickness = 0.2;
-    // Larger gap to ensure no lines at road intersections
-    const gapAngle = Math.atan2((roadWidth + 4) / 2, radius); // Increased gap for road intersections
     
-    // Create 4 arc segments, each skipping one road direction
-    // Road directions: North (0), East (PI/2), South (PI), West (3PI/2 or -PI/2)
-    
-    // Segment 1: From East+gap to South-gap (skipping East road at PI/2)
-    this.createArcMesh(radius, edgeThickness, material, edgeY, 
-      Math.PI / 2 + gapAngle, Math.PI - gapAngle);
-    
-    // Segment 2: From South+gap to West-gap (skipping South road at PI)
-    this.createArcMesh(radius, edgeThickness, material, edgeY,
-      Math.PI + gapAngle, 3 * Math.PI / 2 - gapAngle);
-    
-    // Segment 3: From West+gap to North-gap (skipping West road at 3PI/2)
-    // Handle wrap-around: from 3PI/2+gap to 2PI, then from -PI to -gapAngle
-    if (3 * Math.PI / 2 + gapAngle < 2 * Math.PI) {
-      this.createArcMesh(radius, edgeThickness, material, edgeY,
-        3 * Math.PI / 2 + gapAngle, 2 * Math.PI);
-    }
-    if (-gapAngle > -Math.PI) {
-      this.createArcMesh(radius, edgeThickness, material, edgeY,
-        -Math.PI, -gapAngle);
-    }
-    
-    // Segment 4: From North+gap to East-gap (skipping North road at 0)
-    if (gapAngle < Math.PI / 2) {
-      this.createArcMesh(radius, edgeThickness, material, edgeY,
-        gapAngle, Math.PI / 2 - gapAngle);
-    }
+    // Create full circle edge (no gaps) - softer, more subtle
+    const innerRadius = radius - edgeThickness;
+    const arcGeo = new THREE.RingGeometry(innerRadius, radius, 64);
+    const arc = new THREE.Mesh(arcGeo, material);
+    arc.rotation.x = -Math.PI / 2;
+    arc.position.set(x, edgeY, z);
+    this.scene.add(arc);
   }
 
   createArcMesh(radius, thickness, material, y, startAngle, endAngle) {
@@ -239,7 +207,7 @@ export class CityBase {
     this.scene.add(arc);
   }
 
-  createEdgeSegments(position, direction, material, gap, roundaboutRadius = 0) {
+  createEdgeSegments(position, direction, material, gap, roundaboutRadius = 0, roundaboutRadiusForContact = 0) {
     const range = 200;
     const intersections = this.roadPositions;
     
@@ -247,8 +215,27 @@ export class CityBase {
     let start = -range;
     
     intersections.sort((a, b) => a - b).forEach(intersection => {
-      // For center intersection (0, 0), use roundabout radius
-      const actualGap = (intersection === 0 && roundaboutRadius > 0) ? roundaboutRadius * 2 : gap;
+      // For center intersection (0, 0), calculate exact contact point with roundabout edge
+      // For other intersections, use normal gap
+      let actualGap;
+      if (intersection === 0 && roundaboutRadius > 0 && roundaboutRadiusForContact > 0) {
+        // Calculate exact contact point: edge should touch roundabout edge exactly
+        // Roundabout edge is at radius roundaboutRadiusForContact
+        // Road edge is at position (which is roadPos + edgeOffset, typically ±10)
+        // Using Pythagorean theorem: roundaboutRadius^2 = roadEdgeDistance^2 + contactDistance^2
+        const roadEdgeDistance = Math.abs(position);
+        if (roadEdgeDistance < roundaboutRadiusForContact) {
+          // Calculate the point where road edge touches roundabout edge
+          const contactDistance = Math.sqrt(roundaboutRadiusForContact * roundaboutRadiusForContact - roadEdgeDistance * roadEdgeDistance);
+          actualGap = contactDistance * 2; // Gap on both sides (symmetric)
+        } else {
+          // If edge is outside roundabout, no gap needed
+          actualGap = 0;
+        }
+      } else {
+        actualGap = (intersection === 0 && roundaboutRadius > 0) ? roundaboutRadius * 2 : gap;
+      }
+      
       const gapStart = intersection - actualGap / 2;
       const gapEnd = intersection + actualGap / 2;
       
@@ -284,7 +271,30 @@ export class CityBase {
     });
   }
 
-  loadRoundaboutLogo(radius, y) {
+  createRoundaboutAtIntersection(x, z, radius, innerRadius, y, roadMat) {
+    // Create roundabout as solid disk - exactly same material as roads
+    const roundaboutGeo = new THREE.CircleGeometry(radius, 64);
+    const roundabout = new THREE.Mesh(roundaboutGeo, roadMat);
+    roundabout.rotation.x = -Math.PI / 2;
+    roundabout.position.set(x, y, z);
+    roundabout.renderOrder = 0;
+    this.scene.add(roundabout);
+
+    // Create roundabout center island (empty/hollow - ground color)
+    const islandMat = new THREE.MeshLambertMaterial({ 
+      color: CONFIG.colors.ground
+    });
+    const islandGeo = new THREE.CircleGeometry(innerRadius, 64);
+    const island = new THREE.Mesh(islandGeo, islandMat);
+    island.rotation.x = -Math.PI / 2;
+    island.position.set(x, y + 0.01, z);
+    this.scene.add(island);
+
+    // Load and place logo in center
+    this.loadRoundaboutLogo(innerRadius, y, x, z);
+  }
+
+  loadRoundaboutLogo(radius, y, x = 0, z = 0) {
     // Load SomniaNoBackGround.png as texture
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(
@@ -306,7 +316,7 @@ export class CityBase {
         // Create mesh
         const logo = new THREE.Mesh(geometry, material);
         logo.rotation.x = -Math.PI / 2; // Rotate to horizontal (flat on ground)
-        logo.position.set(0, y + 0.05, 0); // Center of roundabout, slightly above ground
+        logo.position.set(x, y + 0.05, z); // Center of roundabout, slightly above ground
         logo.renderOrder = 999; // Render on top
         
         this.scene.add(logo);

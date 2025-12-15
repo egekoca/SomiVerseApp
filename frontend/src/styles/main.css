@@ -70,6 +70,7 @@ body {
   visibility: visible !important;
   opacity: 1 !important;
   position: relative;
+  z-index: 3001;
   z-index: 10;
 }
 
@@ -777,10 +778,12 @@ body {
   height: 100%;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
-  z-index: 900;
+  z-index: 3000; /* Header ve sabit butonlarin ustunde */
   display: none;
   justify-content: center;
   align-items: center;
+  padding: 20px;
+  overflow-y: auto;
 }
 
 #modal-overlay.active {
@@ -805,6 +808,10 @@ body {
   opacity: 0;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   clip-path: polygon(0 0, calc(100% - 30px) 0, 100% 30px, 100% 100%, 30px 100%, 0 calc(100% - 30px));
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 #modal-overlay.active #game-modal {
@@ -837,6 +844,9 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 6;
 }
 
 .modal-title {
@@ -891,6 +901,8 @@ body {
   padding: 30px;
   position: relative;
   z-index: 5;
+  flex: 1 1 auto;
+  overflow-y: auto;
 }
 
 /* === MODAL FOOTER === */
@@ -1096,6 +1108,15 @@ body {
     padding: 15px;
   }
 
+  #modal-overlay {
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  #game-modal {
+    max-height: 88vh;
+  }
+
   .defi-row {
     flex-direction: column;
     gap: 5px;
@@ -1104,6 +1125,50 @@ body {
 
   .defi-value {
     font-size: 16px;
+  }
+}
+
+/* Yuksekligi kucuk ekranlar icin modal ve buton gorunurlugu */
+@media (max-height: 820px) {
+  #modal-overlay {
+    padding: 12px;
+  }
+
+  #game-modal {
+    max-height: calc(100vh - 16px);
+  }
+
+  .modal-header {
+    padding: 14px 18px;
+  }
+
+  .modal-body {
+    padding: 16px;
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+  }
+}
+
+@media (max-height: 640px) {
+  #modal-overlay {
+    padding: 10px;
+  }
+
+  #game-modal {
+    max-height: calc(100vh - 10px);
+  }
+
+  .modal-body {
+    padding: 12px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+  }
+
+  .primary-btn {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin-top: 16px;
   }
 }
 
