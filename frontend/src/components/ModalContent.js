@@ -908,47 +908,61 @@ export async function generateDomainContent(walletAddress = null) {
       }
       .domain-action-btn {
         flex: 1;
-        padding: 12px 20px;
+        padding: 13px 20px;
         font-size: 0.95em;
-        border-radius: 6px;
+        border-radius: 10px;
         font-family: 'Courier New', monospace;
-        font-weight: bold;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
         cursor: pointer;
-        transition: all 0.3s;
-        border: none;
+        transition: all 0.25s ease;
+        border: 1px solid rgba(var(--theme-rgb, 170, 0, 255), 0.5);
+        background: rgba(0,0,0,0.35);
+        box-shadow: 0 0 14px rgba(0,0,0,0.4), 0 0 12px rgba(var(--theme-rgb, 170, 0, 255), 0.25) inset;
+        color: #fff;
       }
       .domain-action-btn.set-primary {
-        background: #0066ff;
-        color: #fff;
+        background: linear-gradient(135deg, rgba(var(--theme-rgb, 170, 0, 255), 0.9), rgba(0, 255, 204, 0.75));
+        color: #0b0b0f;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 6px;
+        box-shadow: 0 0 18px rgba(var(--theme-rgb, 170, 0, 255), 0.45), 0 0 12px rgba(0, 255, 204, 0.35);
+        border-color: rgba(0, 255, 204, 0.6);
       }
       .domain-action-btn.set-primary:hover:not(:disabled) {
-        background: #0052cc;
+        filter: brightness(1.08);
         transform: translateY(-1px);
+        box-shadow: 0 0 22px rgba(var(--theme-rgb, 170, 0, 255), 0.6), 0 0 14px rgba(0, 255, 204, 0.45);
       }
       .domain-action-btn.set-primary:disabled {
-        background: rgba(255, 255, 255, 0.1);
-        color: rgba(255, 255, 255, 0.5);
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.55);
+        border-color: rgba(255, 255, 255, 0.2);
+        box-shadow: none;
         cursor: not-allowed;
       }
       .domain-action-btn.renew {
-        background: var(--theme-color, #aa00ff);
-        color: #fff;
+        background: linear-gradient(135deg, rgba(0, 255, 170, 0.75), rgba(var(--theme-rgb, 170, 0, 255), 0.9));
+        color: #0b0b0f;
+        border-color: rgba(0, 255, 170, 0.5);
       }
       .domain-action-btn.renew:hover {
-        background: #8800cc;
+        filter: brightness(1.06);
         transform: translateY(-1px);
       }
       .domain-action-btn.secondary {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        color: #fff;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(0, 255, 204, 0.35);
+        color: #e2faff;
+        box-shadow: 0 0 12px rgba(0, 255, 204, 0.25) inset;
       }
-      .domain-action-btn.secondary:hover {
-        background: rgba(255, 255, 255, 0.2);
+      .domain-action-btn.secondary:hover:not(:disabled) {
+        background: rgba(0, 255, 204, 0.1);
+        border-color: rgba(0, 255, 204, 0.55);
+        transform: translateY(-1px);
       }
       .domain-action-btn:disabled {
         opacity: 0.5;

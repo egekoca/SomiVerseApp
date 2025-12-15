@@ -377,6 +377,57 @@ export class DomainService {
   }
 
   /**
+   * Clear primary domain on-chain
+   * Calls clearPrimary() on SomiNameRegistryV2
+   */
+  async clearPrimary() {
+    try {
+      const signer = await SwapService.getSigner();
+      if (!signer) {
+        throw new Error('No signer available. Please connect wallet.');
+      }
+
+      // Ensure we're on mainnet
+      await this.switchToMainnet();
+
+      if (!this.registryContract) {
+        await this.init();
+      }
+
+      const registryWithSigner = new ethers.Contract(
+        this.registryAddress,
+        DOMAIN_REGISTRY_ABI,
+        signer
+      );
+
+      console.log('Clearing primary domain for signer');
+
+      const tx = await registryWithSigner.clearPrimary({
+        gasPrice: ethers.parseUnits('6', 'gwei')
+      });
+
+      console.log('clearPrimary transaction sent:', tx.hash);
+      
+      const receipt = await tx.wait();
+      console.log('Primary domain cleared successfully:', receipt);
+
+      // Clear local storage cache
+      const signerAddress = (await signer.getAddress()).toLowerCase();
+      const key = `primary_${signerAddress}`;
+      localStorage.removeItem(key);
+
+      return {
+        success: true,
+        txHash: tx.hash,
+        receipt
+      };
+    } catch (error) {
+      console.error('DomainService clearPrimary error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get domains from local storage (cached)
    * @param {string} address - Wallet address
    * @returns {Array} Array of domain names

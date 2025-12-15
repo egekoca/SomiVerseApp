@@ -41,6 +41,15 @@ export const DOMAIN_REGISTRY_ABI = [
     stateMutability: 'nonpayable',
     type: 'function'
   },
+
+  // Clear primary domain
+  {
+    inputs: [],
+    name: 'clearPrimary',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
   
   // Get primary domain
   {

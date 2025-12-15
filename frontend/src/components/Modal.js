@@ -2762,13 +2762,22 @@ export class Modal {
     button.textContent = 'Clearing...';
 
     try {
-      // Clear primary by setting empty string (if supported) or just reload
-      // For now, just reload - clearing might require contract method
-      await this.loadDomains();
-      this.showMessage('Primary domain cleared', 'success');
+      const result = await domainService.clearPrimary();
+
+      if (result.success) {
+        this.showMessage('Primary domain cleared on-chain', 'success');
+
+        // UI güncelleme: event ile etiketi sıfırla
+        window.dispatchEvent(new CustomEvent('primaryDomainSet', {
+          detail: { domain: null }
+        }));
+
+        // Yeniden yükle
+        setTimeout(() => this.loadDomains(), 1200);
+      }
     } catch (error) {
       console.error('Clear primary error:', error);
-      this.showMessage('Failed to clear primary domain', 'error');
+      this.showMessage(error.message || 'Failed to clear primary domain', 'error');
     } finally {
       button.disabled = false;
       button.textContent = originalText;

@@ -22,6 +22,13 @@ export class Header {
     this.setupListeners();
   }
 
+  setWalletLabel(text) {
+    const walletAddrEl = this.element.querySelector('.wallet-addr');
+    if (walletAddrEl) {
+      walletAddrEl.textContent = text;
+    }
+  }
+
   setProfileModal(profileModal) {
     this.profileModal = profileModal;
   }
@@ -114,9 +121,11 @@ export class Header {
       // Update somName and wallet address display
       if (this.isConnected && this.account) {
         this.somName = domain;
-        const walletAddrEl = this.element.querySelector('.wallet-addr');
-        if (walletAddrEl) {
-          walletAddrEl.textContent = domain;
+        if (domain) {
+          this.setWalletLabel(domain);
+        } else {
+          const shortAddr = `${this.account.slice(0, 6)}...${this.account.slice(-4)}`;
+          this.setWalletLabel(shortAddr);
         }
       }
     });
@@ -192,7 +201,7 @@ export class Header {
     
     // Short address as fallback
     const shortAddr = `${account.slice(0, 6)}...${account.slice(-4)}`;
-    this.element.querySelector('.wallet-addr').textContent = shortAddr;
+    this.setWalletLabel(shortAddr);
 
     // Resolve Somnia domain name (.somi)
     try {
@@ -200,19 +209,13 @@ export class Header {
       const primaryDomain = await this.domainService.getPrimaryDomain(account);
       if (primaryDomain) {
         this.somName = `${primaryDomain}.somi`;
-        const walletAddrEl = this.element.querySelector('.wallet-addr');
-        if (walletAddrEl) {
-          walletAddrEl.textContent = this.somName;
-        }
+        this.setWalletLabel(this.somName);
       } else {
         // Fallback to SomniaNameService
         const somName = await SomniaNameService.getPrimarySomName(account);
         if (somName) {
           this.somName = somName;
-          const walletAddrEl = this.element.querySelector('.wallet-addr');
-          if (walletAddrEl) {
-            walletAddrEl.textContent = somName;
-          }
+          this.setWalletLabel(somName);
         }
       }
     } catch (err) {
